@@ -20,8 +20,19 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
             wait:     1 * time.Millisecond,
             fetch: func(ids []string) ([]*models.User, []error) {
                 var users []*models.User
-                err := db.Model(&users).Where("id in (?)", pg.In(ids)).Select()
-                return users, []error{err}
+                err := db.Model(&users).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                u := make(map[string]*models.User, len(ids))
+                for _, user := range users {
+                    u[user.ID] = user
+                }
+                result := make([]*models.User, len(ids))
+                for i, id := range ids {
+                    result[i] = u[id]
+                }
+                return result, nil
             },
         }
         ctx := context.WithValue(r.Context(), userloaderKey, &userloader)
