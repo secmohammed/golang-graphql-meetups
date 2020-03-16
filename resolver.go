@@ -7,68 +7,31 @@ import (
 	"errors"
 
 	"github.com/secmohammed/meetups/models"
+	"github.com/secmohammed/meetups/postgres"
 )
 
-var meetups = []*models.Meetup{
-	{
-		ID:          "1",
-		Name:        "A meetup",
-		Description: "A description",
-		UserID:      "1",
-	},
-	{
-		ID:          "2",
-		Name:        "A second meetup",
-		Description: "A description",
-		UserID:      "2",
-	},
-}
-
-var users = []*models.User{
-	{
-		ID:       "1",
-		Username: "Bob",
-		Email:    "bob@gmail.com",
-	},
-	{
-		ID:       "2",
-		Username: "Jon",
-		Email:    "jon@gmail.com",
-	},
-}
-
 type Resolver struct {
+	MeetupsRepo postgres.MeetupsRepo
+	UsersRepo   postgres.UsersRepo
 }
+
+type queryResolver struct{ *Resolver }
 
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
 
-type queryResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
 
 func (r *Resolver) Mutation() MutationResolver {
 	return &mutationResolver{r}
 }
 
-type mutationResolver struct{ *Resolver }
-
 type meetupResolver struct{ *Resolver }
 
 func (m *meetupResolver) User(ctx context.Context, obj *models.Meetup) (*models.User, error) {
-	user := new(models.User)
 
-	for _, u := range users {
-		if u.ID == obj.UserID {
-			user = u
-			break
-		}
-	}
-
-	if user == nil {
-		return nil, errors.New("user with id not exist")
-	}
-
-	return user, nil
+	return m.Resolver.UsersRepo.GetByID(obj.UserID)
 }
 
 func (r *Resolver) Meetup() MeetupResolver {
@@ -82,21 +45,25 @@ func (r *Resolver) User() UserResolver {
 }
 
 func (u *userResolver) Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error) {
-	var m []*models.Meetup
-
-	for _, meetup := range meetups {
-		if meetup.UserID == obj.ID {
-			m = append(m, meetup)
-		}
-	}
-
-	return m, nil
+	return nil, nil
 }
 
 func (m *mutationResolver) CreateMeetup(ctx context.Context, input NewMeetup) (*models.Meetup, error) {
-	panic("implement me")
+	if len(input.Name) < 3 {
+		return nil, errors.New("Name must be more than 3 characters")
+	}
+	if len(input.Description) < 3 {
+		return nil, errors.New("Description must be more than 3 characters")
+	}
+	meetup := &models.Meetup{
+		Name:        input.Name,
+		Description: input.Description,
+		UserID:      "1",
+	}
+	return m.MeetupsRepo.CreateMeetup(meetup)
 }
 
 func (r *queryResolver) Meetups(ctx context.Context) ([]*models.Meetup, error) {
-	return meetups, nil
+
+	return r.MeetupsRepo.GetMeetups()
 }
