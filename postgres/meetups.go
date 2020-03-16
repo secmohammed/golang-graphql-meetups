@@ -1,7 +1,10 @@
 package postgres
 
 import (
+    "fmt"
+
     "github.com/go-pg/pg"
+    "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/models"
 )
 
@@ -11,9 +14,19 @@ type MeetupsRepo struct {
 }
 
 // GetMeetups is used to get meetups from database.
-func (m *MeetupsRepo) GetMeetups() ([]*models.Meetup, error) {
+func (m *MeetupsRepo) GetMeetups(filter *graphql.MeetupFilter, limit, offset *int) ([]*models.Meetup, error) {
     var meetups []*models.Meetup
-    err := m.DB.Model(&meetups).Order("id").Select()
+    query := m.DB.Model(&meetups).Order("id")
+    if filter != nil && filter.Name != nil && *filter.Name != "" {
+        query.Where("name LIKE ?", fmt.Sprintf("%%%s%%", *filter.Name))
+    }
+    if limit != nil {
+        query.Limit(*limit)
+    }
+    if offset != nil {
+        query.Offset(*offset)
+    }
+    err := query.Select()
     if err != nil {
         return nil, err
     }

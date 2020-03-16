@@ -2,6 +2,10 @@
 
 package graphql
 
+type MeetupFilter struct {
+	Name *string `json:"name"`
+}
+
 type NewMeetup struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
