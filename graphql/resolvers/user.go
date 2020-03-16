@@ -3,12 +3,13 @@ package resolvers
 import (
     "context"
 
+    "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/models"
 )
 
 type userResolver struct{ *Resolver }
 
-func (r *Resolver) User() UserResolver {
+func (r *Resolver) User() graphql.UserResolver {
     return &userResolver{r}
 }
 
