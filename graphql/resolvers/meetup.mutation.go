@@ -5,7 +5,13 @@ import (
     "errors"
     "fmt"
 
+    "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+)
+
+var (
+    // ErrUnauthenticated is used to indicate that user is unauthenticated.
+    ErrUnauthenticated = errors.New("Unauthorized Attempt")
 )
 
 func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, error) {
@@ -37,11 +43,15 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input mo
     return meetup, nil
 }
 func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.NewMeetup) (*models.Meetup, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return nil, ErrUnauthenticated
+    }
 
     meetup := &models.Meetup{
         Name:        input.Name,
         Description: input.Description,
-        UserID:      "1",
+        UserID:      currentUser.ID,
     }
     if err := meetup.Validate(); err != nil {
         return nil, err

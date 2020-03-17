@@ -33,6 +33,19 @@ type RegisterInput struct {
     LastName             string `json:"last_name" validate:"required,min=3,max=32"`
 }
 
+//LoginInput is used to validate the user against passed inputs while logging in.
+type LoginInput struct {
+    Email    string `json:"email" validate:"required,email"`
+    Password string `json:"password" validate:"required,min=8,max=32"`
+}
+
+//Validate is used to validate teh passed values against the login struct.
+func (u *LoginInput) Validate() error {
+    validate := validator.New()
+    return validate.Struct(u)
+
+}
+
 //Validate is used to validate the passed values against the struct validation props.
 func (u *RegisterInput) Validate() error {
     validate := validator.New()
@@ -82,4 +95,11 @@ func (u *User) GenerateToken() (*AuthToken, error) {
         AccessToken: accessToken,
         ExpiredAt:   expiredAt,
     }, nil
+}
+
+// ComparePassword is used to compare the plaintext password that user passed against its hashed password which stored in database.
+func (u *User) ComparePassword(password string) error {
+    bytePassword := []byte(password)
+    byteHashedPassword := []byte(u.Password)
+    return bcrypt.CompareHashAndPassword(byteHashedPassword, bytePassword)
 }

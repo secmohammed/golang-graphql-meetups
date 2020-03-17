@@ -43,6 +43,11 @@ input UpdateMeetup {
   description: String!
 }
 
+input LoginInput {
+  email: String!
+  password: String!
+}
+
 type Query {
   meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
   user(id: ID!): User!
@@ -50,6 +55,7 @@ type Query {
 
 type Mutation {
   register(input: RegisterInput): Auth!
+  login(input: LoginInput): Auth!
   createMeetup(input: NewMeetup!): Meetup!
   updateMeetup(id: ID!, input: UpdateMeetup!): Meetup!
   deleteMeetup(id: ID!): Boolean!

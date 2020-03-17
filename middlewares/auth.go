@@ -9,12 +9,12 @@ import (
     "github.com/dgrijalva/jwt-go"
     "github.com/dgrijalva/jwt-go/request"
     "github.com/pkg/errors"
+
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/postgres"
-    "github.com/secmohammed/meetups/utils"
 )
 
-const authContext = utils.ContextKey("auth")
+const CurrentUserKey = "currentUser"
 
 func AuthMiddleware(repo postgres.UsersRepo) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
@@ -24,18 +24,22 @@ func AuthMiddleware(repo postgres.UsersRepo) func(http.Handler) http.Handler {
                 next.ServeHTTP(w, r)
                 return
             }
+
             claims, ok := token.Claims.(jwt.MapClaims)
+
             if !ok || !token.Valid {
                 next.ServeHTTP(w, r)
                 return
             }
+
             user, err := repo.GetByID(claims["jti"].(string))
             if err != nil {
                 next.ServeHTTP(w, r)
                 return
             }
 
-            ctx := context.WithValue(r.Context(), authContext, user)
+            ctx := context.WithValue(r.Context(), CurrentUserKey, user)
+
             next.ServeHTTP(w, r.WithContext(ctx))
         })
     }
@@ -48,11 +52,12 @@ var authHeaderExtractor = &request.PostExtractionFilter{
 
 func stripBearerPrefixFromToken(token string) (string, error) {
     bearer := "BEARER"
+
     if len(token) > len(bearer) && strings.ToUpper(token[0:len(bearer)]) == bearer {
         return token[len(bearer)+1:], nil
     }
-    return "", errors.New("couldn't parse the bearer header")
 
+    return token, nil
 }
 
 var authExtractor = &request.MultiExtractor{
@@ -61,22 +66,25 @@ var authExtractor = &request.MultiExtractor{
 }
 
 func parseToken(r *http.Request) (*jwt.Token, error) {
-
     jwtToken, err := request.ParseFromRequest(r, authExtractor, func(token *jwt.Token) (interface{}, error) {
         t := []byte(os.Getenv("JWT_SECRET"))
         return t, nil
     })
-    return jwtToken, errors.New(err.Error())
+
+    return jwtToken, errors.Wrap(err, "parseToken error: ")
 }
 
 func GetCurrentUserFromContext(ctx context.Context) (*models.User, error) {
     errNoUserInContext := errors.New("no user in context")
-    if ctx.Value(authContext) == nil {
+
+    if ctx.Value(CurrentUserKey) == nil {
         return nil, errNoUserInContext
     }
-    user, ok := ctx.Value(authContext).(*models.User)
+
+    user, ok := ctx.Value(CurrentUserKey).(*models.User)
     if !ok || user.ID == "" {
         return nil, errNoUserInContext
     }
+
     return user, nil
 }

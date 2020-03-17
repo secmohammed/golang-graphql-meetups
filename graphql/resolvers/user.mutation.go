@@ -8,6 +8,35 @@ import (
     "github.com/secmohammed/meetups/models"
 )
 
+var (
+    //ErrBadCredentials is used to clarify that user has given invaild credentials.
+    ErrBadCredentials = errors.New("Invalid credentials")
+)
+
+func (m *mutationResolver) Login(ctx context.Context, input *models.LoginInput) (*models.Auth, error) {
+    if err := input.Validate(); err != nil {
+        return nil, err
+    }
+
+    user, err := m.UsersRepo.GetByField("email", input.Email)
+    if err != nil {
+        return nil, ErrBadCredentials
+    }
+    err = user.ComparePassword(input.Password)
+    if err != nil {
+        return nil, ErrBadCredentials
+    }
+    token, err := user.GenerateToken()
+    if err != nil {
+        return nil, errors.New("something went wrong")
+    }
+    return &models.Auth{
+        AuthToken: token,
+        User:      user,
+    }, nil
+
+}
+
 // Register is used to create a user by the passed attribtues.
 func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterInput) (*models.Auth, error) {
 
