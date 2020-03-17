@@ -1,8 +1,18 @@
+scalar Time
+type AuthToken {
+  accessToken: String!
+  expiredAt: Time!
+}
+type Auth {
+  authToken: AuthToken!
+  user: User!
+}
 type User {
   id: ID!
   username: String!
   email: String!
-
+  first_name: String!
+  last_name: String!
   meetups: [Meetup!]!
 }
 
@@ -16,6 +26,14 @@ type Meetup {
 input NewMeetup {
   name: String!
   description: String!
+}
+input RegisterInput {
+  username: String!
+  email: String!
+  password: String!
+  password_confirmation: String!
+  first_name: String!
+  last_name: String!
 }
 input MeetupFilter {
   name: String
@@ -31,6 +49,7 @@ type Query {
 }
 
 type Mutation {
+  register(input: RegisterInput): Auth!
   createMeetup(input: NewMeetup!): Meetup!
   updateMeetup(id: ID!, input: UpdateMeetup!): Meetup!
   deleteMeetup(id: ID!): Boolean!

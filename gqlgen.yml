@@ -8,7 +8,7 @@ schema:
 exec:
   filename: graphql/generated.go
 model:
-  filename: graphql/models_gen.go
+  filename: models/models_gen.go
 models:
   User:
     model: github.com/secmohammed/meetups/models.User
@@ -21,6 +21,6 @@ models:
       user:
         resolver: true
 resolver:
-  filename: graphql/resolvers/resolver.go
+  filename: graphql/resolvers/resolver.base.go
   type: Resolver
 autobind: []

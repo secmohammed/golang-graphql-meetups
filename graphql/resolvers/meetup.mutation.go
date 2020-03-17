@@ -5,7 +5,6 @@ import (
     "errors"
     "fmt"
 
-    "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/models"
 )
 
@@ -20,7 +19,7 @@ func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, e
     }
     return true, nil
 }
-func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input graphql.UpdateMeetup) (*models.Meetup, error) {
+func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetup) (*models.Meetup, error) {
     meetup, err := m.MeetupsRepo.GetByID(id)
     if err != nil || meetup == nil {
         return nil, errors.New("meetup doesn't exist")
@@ -37,7 +36,7 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input gr
     }
     return meetup, nil
 }
-func (m *mutationResolver) CreateMeetup(ctx context.Context, input graphql.NewMeetup) (*models.Meetup, error) {
+func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.NewMeetup) (*models.Meetup, error) {
 
     meetup := &models.Meetup{
         Name:        input.Name,

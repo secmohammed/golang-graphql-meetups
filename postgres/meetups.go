@@ -4,7 +4,6 @@ import (
     "fmt"
 
     "github.com/go-pg/pg"
-    "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/models"
 )
 
@@ -14,7 +13,7 @@ type MeetupsRepo struct {
 }
 
 // GetMeetups is used to get meetups from database.
-func (m *MeetupsRepo) GetMeetups(filter *graphql.MeetupFilter, limit, offset *int) ([]*models.Meetup, error) {
+func (m *MeetupsRepo) GetMeetups(filter *models.MeetupFilter, limit, offset *int) ([]*models.Meetup, error) {
     var meetups []*models.Meetup
     query := m.DB.Model(&meetups).Order("id")
     if filter != nil && filter.Name != nil && *filter.Name != "" {

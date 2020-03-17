@@ -19,3 +19,9 @@ func (u *UsersRepo) GetByID(id string) (*models.User, error) {
     }
     return &user, nil
 }
+
+// CreateUser is used to create user for the database.
+func (u *UsersRepo) CreateUser(tx *pg.Tx, user *models.User) (*models.User, error) {
+    _, err := tx.Model(user).Returning("*").Insert()
+    return user, err
+}
