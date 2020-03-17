@@ -25,15 +25,6 @@ type NewMeetup struct {
 	Description string `json:"description"`
 }
 
-type RegisterInput struct {
-	Username             string `json:"username"`
-	Email                string `json:"email"`
-	Password             string `json:"password"`
-	PasswordConfirmation string `json:"password_confirmation"`
-	FirstName            string `json:"first_name"`
-	LastName             string `json:"last_name"`
-}
-
 type UpdateMeetup struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`

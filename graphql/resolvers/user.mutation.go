@@ -10,6 +10,19 @@ import (
 
 // Register is used to create a user by the passed attribtues.
 func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterInput) (*models.Auth, error) {
+
+    if err := input.Validate(); err != nil {
+        return nil, err
+    }
+    _, err := m.UsersRepo.GetByField("email", input.Email)
+    if err == nil {
+        return nil, errors.New("email already in used")
+    }
+
+    _, err = m.UsersRepo.GetByField("username", input.Username)
+    if err == nil {
+        return nil, errors.New("username already in used")
+    }
     user := &models.User{
         Username:  input.Username,
         Email:     input.Email,
@@ -17,10 +30,7 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
         FirstName: input.FirstName,
         LastName:  input.LastName,
     }
-    if err := user.Validate(); err != nil {
-        return nil, err
-    }
-    err := user.HashPassword(input.Password)
+    err = user.HashPassword(input.Password)
     if err != nil {
         return nil, errors.New("something went wrong")
     }

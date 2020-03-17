@@ -1,6 +1,8 @@
 package postgres
 
 import (
+    "fmt"
+
     "github.com/go-pg/pg"
     "github.com/secmohammed/meetups/models"
 )
@@ -8,6 +10,13 @@ import (
 // UsersRepo is used to contain the db driver.
 type UsersRepo struct {
     DB *pg.DB
+}
+
+//GetByField is used to retrieve a user model by a specific criteria.
+func (u *UsersRepo) GetByField(field, value string) (*models.User, error) {
+    var user models.User
+    err := u.DB.Model(&user).Where(fmt.Sprintf("%v = ?", field), value).First()
+    return &user, err
 }
 
 // GetByID function is used to get the user by its passed id.

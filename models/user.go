@@ -5,8 +5,8 @@ import (
     "time"
 
     "github.com/dgrijalva/jwt-go"
-
     "github.com/go-playground/validator"
+
     "golang.org/x/crypto/bcrypt"
 )
 
@@ -23,9 +23,31 @@ type User struct {
     DeletedAt *time.Time `json:"-" pg:",soft_delete"`
 }
 
+//RegisterInput is used to validate the user against passed inputs while registration.
+type RegisterInput struct {
+    Username             string `json:"username" validate:"required,min=3,max=32"`
+    Email                string `json:"email" validate:"required,email"`
+    Password             string `json:"password" validate:"required,min=8,max=32,eqfield=PasswordConfirmation"`
+    PasswordConfirmation string `json:"password_confirmation" validate:"required"`
+    FirstName            string `json:"first_name" validate:"required,min=3,max=32"`
+    LastName             string `json:"last_name" validate:"required,min=3,max=32"`
+}
+
 //Validate is used to validate the passed values against the struct validation props.
-func (u *User) Validate() error {
+func (u *RegisterInput) Validate() error {
     validate := validator.New()
+    // Custom rule for validating against column.
+
+    // validate.RegisterValidation("unique", func(fl validator.FieldLevel) bool {
+    //     param := strings.Split(fl.Param(), `:`)
+    //     paramField := param[0]
+    //     paramValue := param[1]
+    //     user, err := postgres.GetByField(paramField, paramValue)
+    //     if err != nil || user != nil {
+    //         return false
+    //     }
+    //     return true
+    // })
     return validate.Struct(u)
 }
 
