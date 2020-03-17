@@ -303,8 +303,8 @@ input MeetupFilter {
   name: String
 }
 input UpdateMeetup {
-  name: String
-  description: String
+  name: String!
+  description: String!
 }
 
 type Query {
@@ -2260,13 +2260,13 @@ func (ec *executionContext) unmarshalInputUpdateMeetup(ctx context.Context, obj 
 		switch k {
 		case "name":
 			var err error
-			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "description":
 			var err error
-			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

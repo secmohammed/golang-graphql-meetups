@@ -41,24 +41,11 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input gr
     if err != nil || meetup == nil {
         return nil, errors.New("meetup doesn't exist")
     }
-    changed := false
-    if input.Name != nil {
-        if len(*input.Name) < 3 {
-            return nil, errors.New("Name is not long enough")
-        }
-        meetup.Name = *input.Name
-        changed = true
-    }
-    if input.Description != nil {
-        if len(*input.Description) < 3 {
-            return nil, errors.New("description is not long enough")
 
-        }
-        meetup.Description = *input.Description
-        changed = true
-    }
-    if !changed {
-        return nil, errors.New("there are no updated fields to update database")
+    meetup.Name = input.Name
+    meetup.Description = input.Description
+    if err := meetup.Validate(); err != nil {
+        return nil, err
     }
     meetup, err = m.MeetupsRepo.Update(meetup)
     if err != nil {
@@ -67,18 +54,14 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input gr
     return meetup, nil
 }
 func (m *mutationResolver) CreateMeetup(ctx context.Context, input graphql.NewMeetup) (*models.Meetup, error) {
-    if len(input.Name) < 3 {
-        return nil, errors.New("name not long enough")
-    }
-
-    if len(input.Description) < 3 {
-        return nil, errors.New("description not long enough")
-    }
 
     meetup := &models.Meetup{
         Name:        input.Name,
         Description: input.Description,
         UserID:      "1",
+    }
+    if err := meetup.Validate(); err != nil {
+        return nil, err
     }
 
     return m.MeetupsRepo.CreateMeetup(meetup)

@@ -21,8 +21,8 @@ input MeetupFilter {
   name: String
 }
 input UpdateMeetup {
-  name: String
-  description: String
+  name: String!
+  description: String!
 }
 
 type Query {

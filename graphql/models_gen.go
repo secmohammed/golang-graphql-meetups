@@ -12,6 +12,6 @@ type NewMeetup struct {
 }
 
 type UpdateMeetup struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
