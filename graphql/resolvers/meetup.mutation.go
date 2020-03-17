@@ -15,10 +15,19 @@ var (
 )
 
 func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return false, ErrUnauthenticated
+    }
+
     meetup, err := m.MeetupsRepo.GetByID(id)
     if err != nil || meetup == nil {
         return false, errors.New("meetup doesn't exist")
     }
+    if meetup.UserID != currentUser.ID {
+        return false, errors.New("Unauthorized attempt")
+    }
+
     err = m.MeetupsRepo.DeleteMeetup(meetup)
     if err != nil {
         return false, fmt.Errorf("error while deleting meetup: %v", err)
@@ -26,11 +35,20 @@ func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, e
     return true, nil
 }
 func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetup) (*models.Meetup, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return nil, ErrUnauthenticated
+    }
+
     meetup, err := m.MeetupsRepo.GetByID(id)
+
     if err != nil || meetup == nil {
         return nil, errors.New("meetup doesn't exist")
     }
 
+    if meetup.UserID != currentUser.ID {
+        return nil, errors.New("Unauthorized attempt")
+    }
     meetup.Name = input.Name
     meetup.Description = input.Description
     if err := meetup.Validate(); err != nil {
