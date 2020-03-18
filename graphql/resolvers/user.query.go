@@ -20,3 +20,6 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 func (u *userResolver) Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error) {
     return u.MeetupsRepo.GetMeetupsForUser(obj)
 }
+func (u *userResolver) Comments(ctx context.Context, obj *models.User) ([]*models.Comment, error) {
+    return u.CommentsRepo.GetCommentsForUser(obj)
+}

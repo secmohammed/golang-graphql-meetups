@@ -9,8 +9,9 @@ import (
 
 //Resolver struct.
 type Resolver struct {
-	MeetupsRepo postgres.MeetupsRepo
-	UsersRepo   postgres.UsersRepo
+	MeetupsRepo  postgres.MeetupsRepo
+	UsersRepo    postgres.UsersRepo
+	CommentsRepo postgres.CommentsRepo
 }
 
 type mutationResolver struct{ *Resolver }
