@@ -42,7 +42,11 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
     if err != nil {
         log.Fatalf("Cannot create APQ redis cache: %v", err)
     }
-    queryHandler := handler.GraphQL(graphql.NewExecutableSchema(c), handler.EnablePersistedQueryCache(cache))
+    queryHandler := handler.GraphQL(
+        graphql.NewExecutableSchema(c),
+        handler.EnablePersistedQueryCache(cache),
+        handler.ComplexityLimit(10),
+    )
 
     router.Use(cors.New(cors.Options{
         AllowedOrigins:   []string{fmt.Sprintf("%s:%s", url, port)},
