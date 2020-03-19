@@ -14,7 +14,6 @@ func (r *Resolver) Meetup() graphql.MeetupResolver {
 }
 
 func (r *queryResolver) Meetups(ctx context.Context, filter *models.MeetupFilter, limit *int, offset *int) ([]*models.Meetup, error) {
-
     return r.MeetupsRepo.GetMeetups(filter, limit, offset)
 }
 

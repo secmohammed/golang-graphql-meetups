@@ -33,9 +33,10 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
 
     router := chi.NewRouter()
     c := graphql.Config{Resolvers: &resolvers.Resolver{
-        MeetupsRepo:  postgres.MeetupsRepo{DB: DB},
-        UsersRepo:    userRepo,
-        CommentsRepo: postgres.CommentsRepo{DB: DB},
+        MeetupsRepo:    postgres.MeetupsRepo{DB: DB},
+        UsersRepo:      userRepo,
+        CommentsRepo:   postgres.CommentsRepo{DB: DB},
+        CategoriesRepo: postgres.CategoriesRepo{DB: DB},
     }}
 
     cache, err := utils.NewCache(os.Getenv("REDIS_ADDRESS"), time.Duration(cacheTTL)*time.Hour)

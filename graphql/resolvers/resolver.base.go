@@ -3,15 +3,16 @@
 package resolvers
 
 import (
-	"github.com/secmohammed/meetups/graphql"
-	"github.com/secmohammed/meetups/postgres"
+    "github.com/secmohammed/meetups/graphql"
+    "github.com/secmohammed/meetups/postgres"
 )
 
 //Resolver struct.
 type Resolver struct {
-	MeetupsRepo  postgres.MeetupsRepo
-	UsersRepo    postgres.UsersRepo
-	CommentsRepo postgres.CommentsRepo
+    MeetupsRepo    postgres.MeetupsRepo
+    UsersRepo      postgres.UsersRepo
+    CommentsRepo   postgres.CommentsRepo
+    CategoriesRepo postgres.CategoriesRepo
 }
 
 type mutationResolver struct{ *Resolver }
@@ -19,10 +20,12 @@ type mutationResolver struct{ *Resolver }
 //
 type queryResolver struct{ *Resolver }
 
+// Mutation method is used to resolve the mutations
 func (r *Resolver) Mutation() graphql.MutationResolver {
-	return &mutationResolver{r}
+    return &mutationResolver{r}
 }
 
+// Query method is used to resolve the queries
 func (r *Resolver) Query() graphql.QueryResolver {
-	return &queryResolver{r}
+    return &queryResolver{r}
 }

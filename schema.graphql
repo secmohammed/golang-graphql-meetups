@@ -29,6 +29,12 @@ type Meetup {
   user: User!
   comments: [Comment!]!
 }
+type Category {
+  id: ID!
+  name: String!
+  user: User!
+  meetups: [Meetup!]!
+}
 
 input NewMeetup {
   name: String!
@@ -60,18 +66,29 @@ input CreateCommentInput {
   body: String!
   meetup_id: ID!
 }
+input CreateCategoryInput {
+  name: String!
+}
 type Query {
   comments(meetup_id: ID!): [Comment!]!
   meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
   user(id: ID!): User!
+  categories(limit: Int = 10, offset: Int = 0): [Category!]!
+  category(name: String!): Category!
 }
 
 type Mutation {
   createComment(input: CreateCommentInput!): Comment!
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!
   deleteComment(id: ID!): Boolean!
+
+  createCategory(input: CreateCategoryInput!): Category!
+  updateCategory(name: String!, input: CreateCategoryInput): Category!
+  deleteCategory(name: String!): Boolean!
+
   register(input: RegisterInput): Auth!
   login(input: LoginInput): Auth!
+
   createMeetup(input: NewMeetup!): Meetup!
   updateMeetup(id: ID!, input: UpdateMeetup!): Meetup!
   deleteMeetup(id: ID!): Boolean!

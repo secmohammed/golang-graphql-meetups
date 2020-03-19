@@ -2,7 +2,8 @@
  ✔ Meetup comments CRUD. @done (20-03-19 07:11)
  ≡ Meetup needs attendance and attendance count for each event.
  ≡ Meetup needs to upload photo for.
- ≡ Meetup needs categories to be attached under ( to apply search filter)
+ ✔ Meetup needs categories to be attached under ( to apply search filter) @done (20-03-19 08:09)
+ ≡ Add Authorization to users M:M.
  ≡ Meetup needs Time (Day, from-to hours) and location.
  ≡ Meetup needs comments and replies.
  ≡ user needs profile page.
