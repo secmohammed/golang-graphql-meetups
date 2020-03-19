@@ -28,7 +28,7 @@ func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, e
         return false, errors.New("Unauthorized attempt")
     }
 
-    err = m.MeetupsRepo.DeleteMeetup(meetup)
+    err = m.MeetupsRepo.Delete(meetup)
     if err != nil {
         return false, fmt.Errorf("error while deleting meetup: %v", err)
     }
@@ -75,5 +75,5 @@ func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.NewMee
         return nil, err
     }
 
-    return m.MeetupsRepo.CreateMeetup(meetup)
+    return m.MeetupsRepo.Create(meetup)
 }

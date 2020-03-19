@@ -32,8 +32,8 @@ func (m *MeetupsRepo) GetMeetups(filter *models.MeetupFilter, limit, offset *int
     return meetups, nil
 }
 
-// CreateMeetup is used to create meetup for the database.
-func (m *MeetupsRepo) CreateMeetup(meetup *models.Meetup) (*models.Meetup, error) {
+// Create is used to create meetup for the database.
+func (m *MeetupsRepo) Create(meetup *models.Meetup) (*models.Meetup, error) {
     _, err := m.DB.Model(meetup).Returning("*").Insert()
     return meetup, err
 }
@@ -54,8 +54,8 @@ func (m *MeetupsRepo) GetByID(id string) (*models.Meetup, error) {
     return &meetup, nil
 }
 
-// DeleteMeetup is used to delete meetup by its id.
-func (m *MeetupsRepo) DeleteMeetup(meetup *models.Meetup) error {
+// Delete is used to delete meetup by its id.
+func (m *MeetupsRepo) Delete(meetup *models.Meetup) error {
     _, err := m.DB.Model(meetup).Where("id = ?", meetup.ID).Delete()
     return err
 }

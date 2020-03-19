@@ -49,18 +49,27 @@ input UpdateMeetup {
   name: String!
   description: String!
 }
-
+input UpdateCommentInput {
+  body: String!
+}
 input LoginInput {
   email: String!
   password: String!
 }
-
+input CreateCommentInput {
+  body: String!
+  meetup_id: ID!
+}
 type Query {
+  comments(meetup_id: ID!): [Comment!]!
   meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
   user(id: ID!): User!
 }
 
 type Mutation {
+  createComment(input: CreateCommentInput!): Comment!
+  updateComment(id: ID!, input: UpdateCommentInput!): Comment!
+  deleteComment(id: ID!): Boolean!
   register(input: RegisterInput): Auth!
   login(input: LoginInput): Auth!
   createMeetup(input: NewMeetup!): Meetup!
