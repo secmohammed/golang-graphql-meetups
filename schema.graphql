@@ -28,6 +28,7 @@ type Meetup {
   description: String!
   user: User!
   comments: [Comment!]!
+  categories: [Category!]!
 }
 type Category {
   id: ID!

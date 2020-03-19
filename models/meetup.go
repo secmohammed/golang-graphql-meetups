@@ -15,7 +15,7 @@ type Meetup struct {
     CreatedAt   time.Time   `json:"created_at"`
     UpdatedAt   time.Time   `json:"updated_at"`
     DeletedAt   *time.Time  `json:"-" pg:",soft_delete"`
-    Categories  []*Category `pg:"many2many:category_to_meetups"`
+    Categories  []*Category `pg:"many2many:category_meetup,joinFK:category_id"`
 }
 
 //Validate is used to validate the passed values against the struct validation props.
