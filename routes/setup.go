@@ -38,6 +38,7 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         CommentsRepo:   postgres.CommentsRepo{DB: DB},
         CategoriesRepo: postgres.CategoriesRepo{DB: DB},
     }}
+    router.Use(middlewares.AuthMiddleware(userRepo))
 
     cache, err := utils.NewCache(os.Getenv("REDIS_ADDRESS"), time.Duration(cacheTTL)*time.Hour)
     if err != nil {
@@ -56,7 +57,6 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
     }).Handler)
     router.Use(middleware.RequestID)
     router.Use(middleware.Logger)
-    router.Use(middlewares.AuthMiddleware(userRepo))
     router.Handle("/", handler.Playground("GraphQL playground", "/query"))
     router.Handle("/query", loaders.DataloaderMiddleware(DB, queryHandler))
     return router

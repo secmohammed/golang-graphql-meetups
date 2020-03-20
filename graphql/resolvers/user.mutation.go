@@ -5,15 +5,22 @@ import (
     "errors"
     "log"
 
+    "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
 )
 
 var (
     //ErrBadCredentials is used to clarify that user has given invaild credentials.
     ErrBadCredentials = errors.New("Invalid credentials")
+    //ErrAuthenticated is used to clarify that user is already authenticated.
+    ErrAuthenticated = errors.New("you are already authenticated")
 )
 
 func (m *mutationResolver) Login(ctx context.Context, input *models.LoginInput) (*models.Auth, error) {
+    if _, err := middlewares.GetCurrentUserFromContext(ctx); err == nil {
+        return nil, ErrAuthenticated
+    }
+
     if err := input.Validate(); err != nil {
         return nil, err
     }
@@ -39,6 +46,10 @@ func (m *mutationResolver) Login(ctx context.Context, input *models.LoginInput) 
 
 // Register is used to create a user by the passed attribtues.
 func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterInput) (*models.Auth, error) {
+
+    if _, err := middlewares.GetCurrentUserFromContext(ctx); err == nil {
+        return nil, ErrAuthenticated
+    }
 
     if err := input.Validate(); err != nil {
         return nil, err

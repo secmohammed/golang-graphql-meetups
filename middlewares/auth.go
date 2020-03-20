@@ -12,10 +12,13 @@ import (
 
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/postgres"
+    "github.com/secmohammed/meetups/utils"
 )
 
-const CurrentUserKey = "currentUser"
+//CurrentUserKey is used to get the context key of current user.
+const CurrentUserKey = utils.ContextKey("currentUser")
 
+//AuthMiddleware is used to authenticate the user via the passed bearer token.
 func AuthMiddleware(repo postgres.UsersRepo) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +77,7 @@ func parseToken(r *http.Request) (*jwt.Token, error) {
     return jwtToken, errors.Wrap(err, "parseToken error: ")
 }
 
+//GetCurrentUserFromContext is used to parse the user that we have at our context.
 func GetCurrentUserFromContext(ctx context.Context) (*models.User, error) {
     errNoUserInContext := errors.New("no user in context")
 
