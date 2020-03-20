@@ -14,6 +14,11 @@ type categoryResolver struct{ *Resolver }
 func (r *Resolver) Category() graphql.CategoryResolver {
     return &categoryResolver{r}
 }
+
+func (c *categoryResolver) Meetups(ctx context.Context, obj *models.Category) ([]*models.Meetup, error) {
+    // return obj.Meetups, nil
+    return loaders.GetLoaders(ctx).MeetupsByCategory.Load(obj.ID)
+}
 func (c *categoryResolver) User(ctx context.Context, obj *models.Category) (*models.User, error) {
     return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
 }

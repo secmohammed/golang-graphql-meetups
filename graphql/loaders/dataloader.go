@@ -14,7 +14,10 @@ const userloaderKey = utils.ContextKey("userloader")
 
 //Loaders struct.
 type Loaders struct {
-    UserByID *UserLoader
+    UserByID           *UserLoader
+    MeetupsByCategory  *MeetupsLoader
+    CategoriesByMeetup *CategoriesLoader
+    // commentsByMeetup    *ItemSliceLoader
 }
 
 //DataloaderMiddleware is used to load the data related to users.
@@ -42,7 +45,46 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                 return result, nil
             },
         }
-
+        loaders.MeetupsByCategory = &MeetupsLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Meetup, []error) {
+                var categories []*models.Category
+                err := db.Model(&categories).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Meetups").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                c := make(map[string]*models.Category, len(ids))
+                for _, category := range categories {
+                    c[category.ID] = category
+                }
+                meetups := make([][]*models.Meetup, len(ids))
+                for i, id := range ids {
+                    meetups[i] = c[id].Meetups
+                }
+                return meetups, nil
+            },
+        }
+        loaders.CategoriesByMeetup = &CategoriesLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Category, []error) {
+                var meetups []*models.Meetup
+                err := db.Model(&meetups).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Categories").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                m := make(map[string]*models.Meetup, len(ids))
+                for _, meetup := range meetups {
+                    m[meetup.ID] = meetup
+                }
+                categories := make([][]*models.Category, len(ids))
+                for i, id := range ids {
+                    categories[i] = m[id].Categories
+                }
+                return categories, nil
+            },
+        }
         ctx := context.WithValue(r.Context(), userloaderKey, loaders)
         next.ServeHTTP(w, r.WithContext(ctx))
     })

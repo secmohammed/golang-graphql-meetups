@@ -27,3 +27,6 @@ func (m *meetupResolver) Comments(ctx context.Context, obj *models.Meetup) ([]*m
     // loaders.GetLoaders(ctx).CommentsByMeetupID.Load(obj.ID)
     return m.CommentsRepo.GetCommentsForMeetup(obj.ID)
 }
+func (m *meetupResolver) Categories(ctx context.Context, obj *models.Meetup) ([]*models.Category, error) {
+    return loaders.GetLoaders(ctx).CategoriesByMeetup.Load(obj.ID)
+}

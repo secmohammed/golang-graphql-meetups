@@ -115,6 +115,7 @@ type ComplexityRoot struct {
 
 type CategoryResolver interface {
 	User(ctx context.Context, obj *models.Category) (*models.User, error)
+	Meetups(ctx context.Context, obj *models.Category) ([]*models.Meetup, error)
 }
 type CommentResolver interface {
 	User(ctx context.Context, obj *models.Comment) (*models.User, error)
@@ -122,6 +123,7 @@ type CommentResolver interface {
 type MeetupResolver interface {
 	User(ctx context.Context, obj *models.Meetup) (*models.User, error)
 	Comments(ctx context.Context, obj *models.Meetup) ([]*models.Comment, error)
+	Categories(ctx context.Context, obj *models.Meetup) ([]*models.Category, error)
 }
 type MutationResolver interface {
 	CreateComment(ctx context.Context, input models.CreateCommentInput) (*models.Comment, error)
@@ -1282,13 +1284,13 @@ func (ec *executionContext) _Category_meetups(ctx context.Context, field graphql
 		Object:   "Category",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Meetups, nil
+		return ec.resolvers.Category().Meetups(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1615,13 +1617,13 @@ func (ec *executionContext) _Meetup_categories(ctx context.Context, field graphq
 		Object:   "Meetup",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Categories, nil
+		return ec.resolvers.Meetup().Categories(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4134,10 +4136,19 @@ func (ec *executionContext) _Category(ctx context.Context, sel ast.SelectionSet,
 				return res
 			})
 		case "meetups":
-			out.Values[i] = ec._Category_meetups(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Category_meetups(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4250,10 +4261,19 @@ func (ec *executionContext) _Meetup(ctx context.Context, sel ast.SelectionSet, o
 				return res
 			})
 		case "categories":
-			out.Values[i] = ec._Meetup_categories(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Meetup_categories(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

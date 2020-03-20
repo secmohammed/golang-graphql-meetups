@@ -20,9 +20,13 @@ models:
     fields:
       user:
         resolver: true
+      categories:
+        resolver: true
   Category:
     model: github.com/secmohammed/meetups/models.Category
     fields:
+      meetups:
+        resolver: true
       user:
         resolver: true
 resolver:
