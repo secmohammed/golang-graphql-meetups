@@ -37,6 +37,7 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         UsersRepo:      userRepo,
         CommentsRepo:   postgres.CommentsRepo{DB: DB},
         CategoriesRepo: postgres.CategoriesRepo{DB: DB},
+        AttendeesRepo:  postgres.AttendeesRepo{DB: DB},
     }}
     router.Use(middlewares.AuthMiddleware(userRepo))
 

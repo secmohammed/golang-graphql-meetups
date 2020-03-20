@@ -3,223 +3,222 @@
 package loaders
 
 import (
-    "sync"
-    "time"
+	"sync"
+	"time"
 
-    "github.com/secmohammed/meetups/models"
+	"github.com/secmohammed/meetups/models"
 )
 
-// MeetupsLoaderConfig captures the config to create a new MeetupsLoader
-type MeetupsLoaderConfig struct {
-    // Fetch is a method that provides the data for the loader
-    Fetch func(keys []string) ([][]*models.Meetup, []error)
+// MeetupLoaderConfig captures the config to create a new MeetupLoader
+type MeetupLoaderConfig struct {
+	// Fetch is a method that provides the data for the loader
+	Fetch func(keys []string) ([]*models.Meetup, []error)
 
-    // Wait is how long wait before sending a batch
-    Wait time.Duration
+	// Wait is how long wait before sending a batch
+	Wait time.Duration
 
-    // MaxBatch will limit the maximum number of keys to send in one batch, 0 = not limit
-    MaxBatch int
+	// MaxBatch will limit the maximum number of keys to send in one batch, 0 = not limit
+	MaxBatch int
 }
 
-// NewMeetupsLoader creates a new MeetupsLoader given a fetch, wait, and maxBatch
-func NewMeetupsLoader(config MeetupsLoaderConfig) *MeetupsLoader {
-    return &MeetupsLoader{
-        fetch:    config.Fetch,
-        wait:     config.Wait,
-        maxBatch: config.MaxBatch,
-    }
+// NewMeetupLoader creates a new MeetupLoader given a fetch, wait, and maxBatch
+func NewMeetupLoader(config MeetupLoaderConfig) *MeetupLoader {
+	return &MeetupLoader{
+		fetch:    config.Fetch,
+		wait:     config.Wait,
+		maxBatch: config.MaxBatch,
+	}
 }
 
-// MeetupsLoader batches and caches requests
-type MeetupsLoader struct {
-    // this method provides the data for the loader
-    fetch func(keys []string) ([][]*models.Meetup, []error)
+// MeetupLoader batches and caches requests
+type MeetupLoader struct {
+	// this method provides the data for the loader
+	fetch func(keys []string) ([]*models.Meetup, []error)
 
-    // how long to done before sending a batch
-    wait time.Duration
+	// how long to done before sending a batch
+	wait time.Duration
 
-    // this will limit the maximum number of keys to send in one batch, 0 = no limit
-    maxBatch int
+	// this will limit the maximum number of keys to send in one batch, 0 = no limit
+	maxBatch int
 
-    // stringERNAL
+	// INTERNAL
 
-    // lazily created cache
-    cache map[string][]*models.Meetup
+	// lazily created cache
+	cache map[string]*models.Meetup
 
-    // the current batch. keys will continue to be collected until timeout is hit,
-    // then everything will be sent to the fetch method and out to the listeners
-    batch *MeetupsLoaderBatch
+	// the current batch. keys will continue to be collected until timeout is hit,
+	// then everything will be sent to the fetch method and out to the listeners
+	batch *meetupLoaderBatch
 
-    // mutex to prevent races
-    mu sync.Mutex
+	// mutex to prevent races
+	mu sync.Mutex
 }
 
-type MeetupsLoaderBatch struct {
-    keys    []string
-    data    [][]*models.Meetup
-    error   []error
-    closing bool
-    done    chan struct{}
+type meetupLoaderBatch struct {
+	keys    []string
+	data    []*models.Meetup
+	error   []error
+	closing bool
+	done    chan struct{}
 }
 
-// Load a User by key, batching and caching will be applied automatically
-func (l *MeetupsLoader) Load(key string) ([]*models.Meetup, error) {
-    return l.LoadThunk(key)()
+// Load a Meetup by key, batching and caching will be applied automatically
+func (l *MeetupLoader) Load(key string) (*models.Meetup, error) {
+	return l.LoadThunk(key)()
 }
 
-// LoadThunk returns a function that when called will block waiting for a User.
+// LoadThunk returns a function that when called will block waiting for a Meetup.
 // This method should be used if you want one goroutine to make requests to many
 // different data loaders without blocking until the thunk is called.
-func (l *MeetupsLoader) LoadThunk(key string) func() ([]*models.Meetup, error) {
-    l.mu.Lock()
-    if it, ok := l.cache[key]; ok {
-        l.mu.Unlock()
-        return func() ([]*models.Meetup, error) {
-            return it, nil
-        }
-    }
-    if l.batch == nil {
-        l.batch = &MeetupsLoaderBatch{done: make(chan struct{})}
-    }
-    batch := l.batch
-    pos := batch.keyIndex(l, key)
-    l.mu.Unlock()
+func (l *MeetupLoader) LoadThunk(key string) func() (*models.Meetup, error) {
+	l.mu.Lock()
+	if it, ok := l.cache[key]; ok {
+		l.mu.Unlock()
+		return func() (*models.Meetup, error) {
+			return it, nil
+		}
+	}
+	if l.batch == nil {
+		l.batch = &meetupLoaderBatch{done: make(chan struct{})}
+	}
+	batch := l.batch
+	pos := batch.keyIndex(l, key)
+	l.mu.Unlock()
 
-    return func() ([]*models.Meetup, error) {
-        <-batch.done
+	return func() (*models.Meetup, error) {
+		<-batch.done
 
-        var data []*models.Meetup
-        if pos < len(batch.data) {
-            data = batch.data[pos]
-        }
+		var data *models.Meetup
+		if pos < len(batch.data) {
+			data = batch.data[pos]
+		}
 
-        var err error
-        // its convenient to be able to return a single error for everything
-        if len(batch.error) == 1 {
-            err = batch.error[0]
-        } else if batch.error != nil {
-            err = batch.error[pos]
-        }
+		var err error
+		// its convenient to be able to return a single error for everything
+		if len(batch.error) == 1 {
+			err = batch.error[0]
+		} else if batch.error != nil {
+			err = batch.error[pos]
+		}
 
-        if err == nil {
-            l.mu.Lock()
-            l.unsafeSet(key, data)
-            l.mu.Unlock()
-        }
+		if err == nil {
+			l.mu.Lock()
+			l.unsafeSet(key, data)
+			l.mu.Unlock()
+		}
 
-        return data, err
-    }
+		return data, err
+	}
 }
 
-// LoadAll fetches many keys at once. It will be broken stringo appropriate sized
+// LoadAll fetches many keys at once. It will be broken into appropriate sized
 // sub batches depending on how the loader is configured
-func (l *MeetupsLoader) LoadAll(keys []string) ([][]*models.Meetup, []error) {
-    results := make([]func() ([]*models.Meetup, error), len(keys))
+func (l *MeetupLoader) LoadAll(keys []string) ([]*models.Meetup, []error) {
+	results := make([]func() (*models.Meetup, error), len(keys))
 
-    for i, key := range keys {
-        results[i] = l.LoadThunk(key)
-    }
+	for i, key := range keys {
+		results[i] = l.LoadThunk(key)
+	}
 
-    users := make([][]*models.Meetup, len(keys))
-    errors := make([]error, len(keys))
-    for i, thunk := range results {
-        users[i], errors[i] = thunk()
-    }
-    return users, errors
+	meetups := make([]*models.Meetup, len(keys))
+	errors := make([]error, len(keys))
+	for i, thunk := range results {
+		meetups[i], errors[i] = thunk()
+	}
+	return meetups, errors
 }
 
-// LoadAllThunk returns a function that when called will block waiting for a Users.
+// LoadAllThunk returns a function that when called will block waiting for a Meetups.
 // This method should be used if you want one goroutine to make requests to many
 // different data loaders without blocking until the thunk is called.
-func (l *MeetupsLoader) LoadAllThunk(keys []string) func() ([][]*models.Meetup, []error) {
-    results := make([]func() ([]*models.Meetup, error), len(keys))
-    for i, key := range keys {
-        results[i] = l.LoadThunk(key)
-    }
-    return func() ([][]*models.Meetup, []error) {
-        users := make([][]*models.Meetup, len(keys))
-        errors := make([]error, len(keys))
-        for i, thunk := range results {
-            users[i], errors[i] = thunk()
-        }
-        return users, errors
-    }
+func (l *MeetupLoader) LoadAllThunk(keys []string) func() ([]*models.Meetup, []error) {
+	results := make([]func() (*models.Meetup, error), len(keys))
+	for i, key := range keys {
+		results[i] = l.LoadThunk(key)
+	}
+	return func() ([]*models.Meetup, []error) {
+		meetups := make([]*models.Meetup, len(keys))
+		errors := make([]error, len(keys))
+		for i, thunk := range results {
+			meetups[i], errors[i] = thunk()
+		}
+		return meetups, errors
+	}
 }
 
 // Prime the cache with the provided key and value. If the key already exists, no change is made
 // and false is returned.
 // (To forcefully prime the cache, clear the key first with loader.clear(key).prime(key, value).)
-func (l *MeetupsLoader) Prime(key string, value []*models.Meetup) bool {
-    l.mu.Lock()
-    var found bool
-    if _, found = l.cache[key]; !found {
-        // make a copy when writing to the cache, its easy to pass a postringer in from a loop var
-        // and end up with the whole cache postringing to the same value.
-        cpy := make([]*models.Meetup, len(value))
-        copy(cpy, value)
-        l.unsafeSet(key, cpy)
-    }
-    l.mu.Unlock()
-    return !found
+func (l *MeetupLoader) Prime(key string, value *models.Meetup) bool {
+	l.mu.Lock()
+	var found bool
+	if _, found = l.cache[key]; !found {
+		// make a copy when writing to the cache, its easy to pass a pointer in from a loop var
+		// and end up with the whole cache pointing to the same value.
+		cpy := *value
+		l.unsafeSet(key, &cpy)
+	}
+	l.mu.Unlock()
+	return !found
 }
 
 // Clear the value at key from the cache, if it exists
-func (l *MeetupsLoader) Clear(key string) {
-    l.mu.Lock()
-    delete(l.cache, key)
-    l.mu.Unlock()
+func (l *MeetupLoader) Clear(key string) {
+	l.mu.Lock()
+	delete(l.cache, key)
+	l.mu.Unlock()
 }
 
-func (l *MeetupsLoader) unsafeSet(key string, value []*models.Meetup) {
-    if l.cache == nil {
-        l.cache = map[string][]*models.Meetup{}
-    }
-    l.cache[key] = value
+func (l *MeetupLoader) unsafeSet(key string, value *models.Meetup) {
+	if l.cache == nil {
+		l.cache = map[string]*models.Meetup{}
+	}
+	l.cache[key] = value
 }
 
 // keyIndex will return the location of the key in the batch, if its not found
 // it will add the key to the batch
-func (b *MeetupsLoaderBatch) keyIndex(l *MeetupsLoader, key string) int {
-    for i, existingKey := range b.keys {
-        if key == existingKey {
-            return i
-        }
-    }
+func (b *meetupLoaderBatch) keyIndex(l *MeetupLoader, key string) int {
+	for i, existingKey := range b.keys {
+		if key == existingKey {
+			return i
+		}
+	}
 
-    pos := len(b.keys)
-    b.keys = append(b.keys, key)
-    if pos == 0 {
-        go b.startTimer(l)
-    }
+	pos := len(b.keys)
+	b.keys = append(b.keys, key)
+	if pos == 0 {
+		go b.startTimer(l)
+	}
 
-    if l.maxBatch != 0 && pos >= l.maxBatch-1 {
-        if !b.closing {
-            b.closing = true
-            l.batch = nil
-            go b.end(l)
-        }
-    }
+	if l.maxBatch != 0 && pos >= l.maxBatch-1 {
+		if !b.closing {
+			b.closing = true
+			l.batch = nil
+			go b.end(l)
+		}
+	}
 
-    return pos
+	return pos
 }
 
-func (b *MeetupsLoaderBatch) startTimer(l *MeetupsLoader) {
-    time.Sleep(l.wait)
-    l.mu.Lock()
+func (b *meetupLoaderBatch) startTimer(l *MeetupLoader) {
+	time.Sleep(l.wait)
+	l.mu.Lock()
 
-    // we must have hit a batch limit and are already finalizing this batch
-    if b.closing {
-        l.mu.Unlock()
-        return
-    }
+	// we must have hit a batch limit and are already finalizing this batch
+	if b.closing {
+		l.mu.Unlock()
+		return
+	}
 
-    l.batch = nil
-    l.mu.Unlock()
+	l.batch = nil
+	l.mu.Unlock()
 
-    b.end(l)
+	b.end(l)
 }
 
-func (b *MeetupsLoaderBatch) end(l *MeetupsLoader) {
-    b.data, b.error = l.fetch(b.keys)
-    close(b.done)
+func (b *meetupLoaderBatch) end(l *MeetupLoader) {
+	b.data, b.error = l.fetch(b.keys)
+	close(b.done)
 }

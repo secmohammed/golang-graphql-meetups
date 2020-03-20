@@ -36,6 +36,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Attendee() AttendeeResolver
 	Category() CategoryResolver
 	Comment() CommentResolver
 	Meetup() MeetupResolver
@@ -48,6 +49,13 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Attendee struct {
+		ID     func(childComplexity int) int
+		Meetup func(childComplexity int) int
+		Status func(childComplexity int) int
+		User   func(childComplexity int) int
+	}
+
 	Auth struct {
 		AuthToken func(childComplexity int) int
 		User      func(childComplexity int) int
@@ -73,6 +81,7 @@ type ComplexityRoot struct {
 	}
 
 	Meetup struct {
+		Attendees   func(childComplexity int) int
 		Categories  func(childComplexity int) int
 		Comments    func(childComplexity int) int
 		Description func(childComplexity int) int
@@ -114,6 +123,10 @@ type ComplexityRoot struct {
 	}
 }
 
+type AttendeeResolver interface {
+	User(ctx context.Context, obj *models.Attendee) (*models.User, error)
+	Meetup(ctx context.Context, obj *models.Attendee) (*models.Meetup, error)
+}
 type CategoryResolver interface {
 	User(ctx context.Context, obj *models.Category) (*models.User, error)
 	Meetups(ctx context.Context, obj *models.Category) ([]*models.Meetup, error)
@@ -126,6 +139,7 @@ type MeetupResolver interface {
 	User(ctx context.Context, obj *models.Meetup) (*models.User, error)
 	Comments(ctx context.Context, obj *models.Meetup) ([]*models.Comment, error)
 	Categories(ctx context.Context, obj *models.Meetup) ([]*models.Category, error)
+	Attendees(ctx context.Context, obj *models.Meetup) ([]*models.Attendee, error)
 }
 type MutationResolver interface {
 	CreateComment(ctx context.Context, input models.CreateCommentInput) (*models.Comment, error)
@@ -166,6 +180,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Attendee.id":
+		if e.complexity.Attendee.ID == nil {
+			break
+		}
+
+		return e.complexity.Attendee.ID(childComplexity), true
+
+	case "Attendee.meetup":
+		if e.complexity.Attendee.Meetup == nil {
+			break
+		}
+
+		return e.complexity.Attendee.Meetup(childComplexity), true
+
+	case "Attendee.status":
+		if e.complexity.Attendee.Status == nil {
+			break
+		}
+
+		return e.complexity.Attendee.Status(childComplexity), true
+
+	case "Attendee.user":
+		if e.complexity.Attendee.User == nil {
+			break
+		}
+
+		return e.complexity.Attendee.User(childComplexity), true
 
 	case "Auth.authToken":
 		if e.complexity.Auth.AuthToken == nil {
@@ -250,6 +292,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.User(childComplexity), true
+
+	case "Meetup.attendees":
+		if e.complexity.Meetup.Attendees == nil {
+			break
+		}
+
+		return e.complexity.Meetup.Attendees(childComplexity), true
 
 	case "Meetup.categories":
 		if e.complexity.Meetup.Categories == nil {
@@ -628,12 +677,19 @@ type Meetup {
   user: User!
   comments: [Comment!]!
   categories: [Category!]!
+  attendees: [Attendee!]!
 }
 type Category {
   id: ID!
   name: String!
   user: User!
   meetups: [Meetup!]!
+}
+type Attendee {
+  id: ID!
+  status: String!
+  user: User!
+  meetup: Meetup!
 }
 
 input NewMeetup {
@@ -1023,6 +1079,154 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Attendee_id(ctx context.Context, field graphql.CollectedField, obj *models.Attendee) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Attendee",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Attendee_status(ctx context.Context, field graphql.CollectedField, obj *models.Attendee) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Attendee",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Attendee_user(ctx context.Context, field graphql.CollectedField, obj *models.Attendee) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Attendee",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Attendee().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Attendee_meetup(ctx context.Context, field graphql.CollectedField, obj *models.Attendee) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Attendee",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Attendee().Meetup(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Meetup)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetup(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Auth_authToken(ctx context.Context, field graphql.CollectedField, obj *models.Auth) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
@@ -1688,6 +1892,43 @@ func (ec *executionContext) _Meetup_categories(ctx context.Context, field graphq
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNCategory2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCategoryᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Meetup_attendees(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Meetup",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Meetup().Attendees(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Attendee)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNAttendee2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendeeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4097,6 +4338,66 @@ func (ec *executionContext) unmarshalInputUpdateMeetup(ctx context.Context, obj 
 
 // region    **************************** object.gotpl ****************************
 
+var attendeeImplementors = []string{"Attendee"}
+
+func (ec *executionContext) _Attendee(ctx context.Context, sel ast.SelectionSet, obj *models.Attendee) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, attendeeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Attendee")
+		case "id":
+			out.Values[i] = ec._Attendee_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "status":
+			out.Values[i] = ec._Attendee_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Attendee_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "meetup":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Attendee_meetup(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var authImplementors = []string{"Auth"}
 
 func (ec *executionContext) _Auth(ctx context.Context, sel ast.SelectionSet, obj *models.Auth) graphql.Marshaler {
@@ -4344,6 +4645,20 @@ func (ec *executionContext) _Meetup(ctx context.Context, sel ast.SelectionSet, o
 					}
 				}()
 				res = ec._Meetup_categories(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "attendees":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Meetup_attendees(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -4860,6 +5175,57 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNAttendee2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendee(ctx context.Context, sel ast.SelectionSet, v models.Attendee) graphql.Marshaler {
+	return ec._Attendee(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAttendee2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendeeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Attendee) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		rctx := &graphql.ResolverContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAttendee2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendee(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNAttendee2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendee(ctx context.Context, sel ast.SelectionSet, v *models.Attendee) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Attendee(ctx, sel, v)
+}
 
 func (ec *executionContext) marshalNAuth2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuth(ctx context.Context, sel ast.SelectionSet, v models.Auth) graphql.Marshaler {
 	return ec._Auth(ctx, sel, &v)

@@ -22,7 +22,9 @@ type meetupResolver struct{ *Resolver }
 func (m *meetupResolver) User(ctx context.Context, obj *models.Meetup) (*models.User, error) {
     return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
 }
-
+func (m *meetupResolver) Attendees(ctx context.Context, obj *models.Meetup) ([]*models.Attendee, error) {
+    return loaders.GetLoaders(ctx).AttendeesByMeetup.Load(obj.ID)
+}
 func (m *meetupResolver) Comments(ctx context.Context, obj *models.Meetup) ([]*models.Comment, error) {
     // loaders.GetLoaders(ctx).CommentsByMeetupID.Load(obj.ID)
     return m.CommentsRepo.GetCommentsForMeetup(obj.ID)

@@ -1,8 +1,6 @@
 package postgres
 
 import (
-    "fmt"
-
     "github.com/go-pg/pg"
     "github.com/secmohammed/meetups/models"
 )
@@ -63,7 +61,6 @@ func (c *CategoriesRepo) GetMeetupsForCategory(id string) ([]*models.Meetup, err
     err := c.DB.Model(&category).Relation("Meetups").Where("id = ?", id).First()
     meetups := make([]*models.Meetup, len(category.Meetups))
     for _, meetup := range category.Meetups {
-        fmt.Println(meetup)
         meetups = append(meetups, meetup)
     }
     return meetups, err

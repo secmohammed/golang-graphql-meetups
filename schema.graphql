@@ -30,12 +30,19 @@ type Meetup {
   user: User!
   comments: [Comment!]!
   categories: [Category!]!
+  attendees: [Attendee!]!
 }
 type Category {
   id: ID!
   name: String!
   user: User!
   meetups: [Meetup!]!
+}
+type Attendee {
+  id: ID!
+  status: String!
+  user: User!
+  meetup: Meetup!
 }
 
 input NewMeetup {

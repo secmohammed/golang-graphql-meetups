@@ -17,6 +17,8 @@ type Loaders struct {
     UserByID           *UserLoader
     MeetupsByCategory  *MeetupsLoader
     CategoriesByMeetup *CategoriesLoader
+    AttendeesByMeetup  *AttendeesLoader
+    MeetupByID         *MeetupLoader
     // commentsByMeetup    *ItemSliceLoader
 }
 
@@ -41,6 +43,26 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                 result := make([]*models.User, len(ids))
                 for i, id := range ids {
                     result[i] = u[id]
+                }
+                return result, nil
+            },
+        }
+        loaders.MeetupByID = &MeetupLoader{
+            maxBatch: 100,
+            wait:     wait,
+            fetch: func(ids []string) ([]*models.Meetup, []error) {
+                var meetups []*models.Meetup
+                err := db.Model(&meetups).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                m := make(map[string]*models.Meetup, len(ids))
+                for _, meetup := range meetups {
+                    m[meetup.ID] = meetup
+                }
+                result := make([]*models.Meetup, len(ids))
+                for i, id := range ids {
+                    result[i] = m[id]
                 }
                 return result, nil
             },
@@ -83,6 +105,26 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                     categories[i] = m[id].Categories
                 }
                 return categories, nil
+            },
+        }
+        loaders.AttendeesByMeetup = &AttendeesLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Attendee, []error) {
+                var meetups []*models.Meetup
+                err := db.Model(&meetups).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Attendees").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                m := make(map[string]*models.Meetup, len(ids))
+                for _, meetup := range meetups {
+                    m[meetup.ID] = meetup
+                }
+                attendees := make([][]*models.Attendee, len(ids))
+                for i, id := range ids {
+                    attendees[i] = m[id].Attendees
+                }
+                return attendees, nil
             },
         }
         ctx := context.WithValue(r.Context(), userloaderKey, loaders)

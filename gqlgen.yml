@@ -18,6 +18,8 @@ models:
   Meetup:
     model: github.com/secmohammed/meetups/models.Meetup
     fields:
+      attendees:
+        resolver: true
       user:
         resolver: true
       categories:
@@ -26,6 +28,13 @@ models:
     model: github.com/secmohammed/meetups/models.Comment
     fields:
       replies:
+        resolver: true
+  Attendee:
+    model: github.com/secmohammed/meetups/models.Attendee
+    fields:
+      meetup:
+        resolver: true
+      user:
         resolver: true
   Category:
     model: github.com/secmohammed/meetups/models.Category
