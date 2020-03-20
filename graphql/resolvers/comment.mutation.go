@@ -23,11 +23,19 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
     if err := input.Validate(); err != nil {
         return nil, err
     }
+
     comment := &models.Comment{
         Body:     input.Body,
         UserID:   currentUser.ID,
         MeetupID: input.MeetupID,
-        ParentID: input.ParentID,
+    }
+    if input.ParentID != "" {
+        _, err := c.CommentsRepo.GetByID(input.ParentID)
+        if err != nil {
+            return nil, errors.New("Couldn't find this comment")
+        }
+        comment.ParentID = input.ParentID
+
     }
 
     return c.CommentsRepo.Create(comment)
@@ -48,8 +56,16 @@ func (c *mutationResolver) UpdateComment(ctx context.Context, id string, input m
     if err := input.Validate(); err != nil {
         return nil, err
     }
+    if input.ParentID != "" {
+        _, err := c.CommentsRepo.GetByID(input.ParentID)
+        if err != nil {
+            return nil, errors.New("Couldn't find this comment")
+        }
+        comment.ParentID = input.ParentID
+
+    }
+
     comment.Body = input.Body
-    comment.ParentID = input.ParentID
 
     return c.CommentsRepo.Update(comment)
 
