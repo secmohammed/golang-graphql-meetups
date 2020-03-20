@@ -108,11 +108,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Categories func(childComplexity int, limit *int, offset *int) int
-		Category   func(childComplexity int, name string) int
-		Comments   func(childComplexity int, meetupID string) int
-		Meetups    func(childComplexity int, filter *models.MeetupFilter, limit *int, offset *int) int
-		User       func(childComplexity int, id string) int
+		AuthenticatedUser func(childComplexity int) int
+		Categories        func(childComplexity int, limit *int, offset *int) int
+		Category          func(childComplexity int, name string) int
+		Comments          func(childComplexity int, meetupID string) int
+		Meetup            func(childComplexity int, id string) int
+		Meetups           func(childComplexity int, filter *models.MeetupFilter, limit *int, offset *int) int
+		User              func(childComplexity int, id string) int
 	}
 
 	User struct {
@@ -164,6 +166,8 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Comments(ctx context.Context, meetupID string) ([]*models.Comment, error)
 	Meetups(ctx context.Context, filter *models.MeetupFilter, limit *int, offset *int) ([]*models.Meetup, error)
+	Meetup(ctx context.Context, id string) (*models.Meetup, error)
+	AuthenticatedUser(ctx context.Context) (*models.User, error)
 	User(ctx context.Context, id string) (*models.User, error)
 	Categories(ctx context.Context, limit *int, offset *int) ([]*models.Category, error)
 	Category(ctx context.Context, name string) (*models.Category, error)
@@ -518,6 +522,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateMeetup(childComplexity, args["id"].(string), args["input"].(models.UpdateMeetup)), true
 
+	case "Query.authenticatedUser":
+		if e.complexity.Query.AuthenticatedUser == nil {
+			break
+		}
+
+		return e.complexity.Query.AuthenticatedUser(childComplexity), true
+
 	case "Query.categories":
 		if e.complexity.Query.Categories == nil {
 			break
@@ -553,6 +564,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Comments(childComplexity, args["meetup_id"].(string)), true
+
+	case "Query.meetup":
+		if e.complexity.Query.Meetup == nil {
+			break
+		}
+
+		args, err := ec.field_Query_meetup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Meetup(childComplexity, args["id"].(string)), true
 
 	case "Query.meetups":
 		if e.complexity.Query.Meetups == nil {
@@ -791,6 +814,9 @@ input CreateAttendanceInput {
 type Query {
   comments(meetup_id: ID!): [Comment!]!
   meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
+  meetup(id: ID!): Meetup!
+  authenticatedUser: User!
+
   user(id: ID!): User!
   categories(limit: Int = 10, offset: Int = 0): [Category!]!
   category(name: String!): Category!
@@ -1112,6 +1138,20 @@ func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawAr
 		}
 	}
 	args["meetup_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_meetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -2748,6 +2788,87 @@ func (ec *executionContext) _Query_meetups(ctx context.Context, field graphql.Co
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNMeetup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_meetup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_meetup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Meetup(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Meetup)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_authenticatedUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AuthenticatedUser(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5117,6 +5238,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_meetups(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "meetup":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_meetup(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "authenticatedUser":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_authenticatedUser(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

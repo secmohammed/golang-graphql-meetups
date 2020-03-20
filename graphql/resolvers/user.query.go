@@ -5,6 +5,7 @@ import (
 
     "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/graphql/loaders"
+    "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
 )
 
@@ -16,6 +17,13 @@ func (r *Resolver) User() graphql.UserResolver {
 
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
     return r.UsersRepo.GetByID(id)
+}
+func (r *queryResolver) AuthenticatedUser(ctx context.Context) (*models.User, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return nil, ErrUnauthenticated
+    }
+    return r.UsersRepo.GetByID(currentUser.ID)
 }
 
 func (u *userResolver) Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error) {
