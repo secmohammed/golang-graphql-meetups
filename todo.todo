@@ -5,7 +5,8 @@
  ✔ Meetup needs categories to be attached under ( to apply search filter) @done (20-03-19 08:09)
  ≡ Add Authorization to users M:M.
  ≡ Meetup needs Time (Day, from-to hours) and location.
- ≡ Meetup needs comments and replies.
+ ≡ Modify comments to contain replies as well.
+ ≡ Add guest middleware for guest queries/mutations.
  ≡ user needs profile page.
  ≡ user needs to add interests based on category to index events according to interests.
  ≡ Optional: ability for users to create groups that they can post meetups at.

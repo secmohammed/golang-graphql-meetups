@@ -15,7 +15,7 @@ type CategoriesRepo struct {
 // GetCategories is used to get categories from database.
 func (c *CategoriesRepo) GetCategories(limit, offset *int) ([]*models.Category, error) {
     var categories []*models.Category
-    query := c.DB.Model(&categories).Order("id")
+    query := c.DB.Model(&categories).Relation("Meetups").Order("id")
     if limit != nil {
         query.Limit(*limit)
     }

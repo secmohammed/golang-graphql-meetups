@@ -20,6 +20,11 @@ models:
     fields:
       user:
         resolver: true
+  Category:
+    model: github.com/secmohammed/meetups/models.Category
+    fields:
+      user:
+        resolver: true
 resolver:
   filename: graphql/resolvers/resolver.base.go
   type: Resolver

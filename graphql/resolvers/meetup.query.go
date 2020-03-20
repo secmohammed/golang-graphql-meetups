@@ -22,10 +22,6 @@ type meetupResolver struct{ *Resolver }
 func (m *meetupResolver) User(ctx context.Context, obj *models.Meetup) (*models.User, error) {
     return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
 }
-func (c *commentResolver) User(ctx context.Context, obj *models.Comment) (*models.User, error) {
-    return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
-
-}
 
 func (m *meetupResolver) Comments(ctx context.Context, obj *models.Meetup) ([]*models.Comment, error) {
     // loaders.GetLoaders(ctx).CommentsByMeetupID.Load(obj.ID)

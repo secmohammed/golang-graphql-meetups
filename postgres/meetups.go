@@ -1,8 +1,6 @@
 package postgres
 
 import (
-    "fmt"
-
     "github.com/go-pg/pg"
     "github.com/secmohammed/meetups/models"
 )
@@ -17,7 +15,7 @@ func (m *MeetupsRepo) GetMeetups(filter *models.MeetupFilter, limit, offset *int
     var meetups []*models.Meetup
     query := m.DB.Model(&meetups).Relation("Categories").Order("id")
     if filter != nil && filter.Name != nil && *filter.Name != "" {
-        query.Where("name LIKE ?", fmt.Sprintf("%%%s%%", *filter.Name))
+
     }
     if limit != nil {
         query.Limit(*limit)
