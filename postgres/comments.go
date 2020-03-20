@@ -41,14 +41,21 @@ func (c *CommentsRepo) Delete(comment *models.Comment) error {
 // GetCommentsForUser is used to get comments for the passed user by its id.
 func (c *CommentsRepo) GetCommentsForUser(user *models.User) ([]*models.Comment, error) {
     var comments []*models.Comment
-    err := c.DB.Model(&comments).Where("user_id = ? ", user.ID).Order("id").Select()
+    err := c.DB.Model(&comments).Where("user_id = ? ", user.ID).Where("parent_id = ?", nil).Order("id").Select()
+    return comments, err
+}
+
+//GetRepliesForComment is used to fetch replies for the passed comment id.
+func (c *CommentsRepo) GetRepliesForComment(id string) ([]*models.Comment, error) {
+    var comments []*models.Comment
+    err := c.DB.Model(&comments).Where("parent_id = ?", id).Order("id").Select()
     return comments, err
 }
 
 // GetCommentsForMeetup is used to get meetups for the passed user by its id.
 func (c *CommentsRepo) GetCommentsForMeetup(id string) ([]*models.Comment, error) {
     var comments []*models.Comment
-    err := c.DB.Model(&comments).Where("meetup_id = ? ", id).Order("id").Select()
+    err := c.DB.Model(&comments).Where("meetup_id = ?", id).Where("parent_id IS NULL").Order("id").Select()
     if err != nil {
         return nil, err
     }

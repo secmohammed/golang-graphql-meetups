@@ -20,6 +20,7 @@ type Comment {
   id: ID!
   body: String!
   user: User!
+  replies: [Comment!]!
 }
 
 type Meetup {
@@ -58,6 +59,7 @@ input UpdateMeetup {
 }
 input UpdateCommentInput {
   body: String!
+  parent_id: String
 }
 input LoginInput {
   email: String!
@@ -66,6 +68,7 @@ input LoginInput {
 input CreateCommentInput {
   body: String!
   meetup_id: ID!
+  parent_id: String
 }
 input CreateCategoryInput {
   name: String!

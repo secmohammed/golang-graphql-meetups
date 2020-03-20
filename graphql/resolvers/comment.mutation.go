@@ -27,6 +27,7 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
         Body:     input.Body,
         UserID:   currentUser.ID,
         MeetupID: input.MeetupID,
+        ParentID: input.ParentID,
     }
 
     return c.CommentsRepo.Create(comment)
@@ -48,6 +49,8 @@ func (c *mutationResolver) UpdateComment(ctx context.Context, id string, input m
         return nil, err
     }
     comment.Body = input.Body
+    comment.ParentID = input.ParentID
+
     return c.CommentsRepo.Update(comment)
 
 }

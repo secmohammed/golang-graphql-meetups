@@ -18,3 +18,6 @@ func (c *commentResolver) User(ctx context.Context, obj *models.Comment) (*model
     return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
 
 }
+func (c *commentResolver) Replies(ctx context.Context, obj *models.Comment) ([]*models.Comment, error) {
+    return c.CommentsRepo.GetRepliesForComment(obj.ID)
+}

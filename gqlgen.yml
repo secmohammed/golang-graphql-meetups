@@ -22,6 +22,11 @@ models:
         resolver: true
       categories:
         resolver: true
+  Comemnt:
+    model: github.com/secmohammed/meetups/models.Comment
+    fields:
+      replies:
+        resolver: true
   Category:
     model: github.com/secmohammed/meetups/models.Category
     fields:

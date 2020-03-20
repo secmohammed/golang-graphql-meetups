@@ -66,9 +66,10 @@ type ComplexityRoot struct {
 	}
 
 	Comment struct {
-		Body func(childComplexity int) int
-		ID   func(childComplexity int) int
-		User func(childComplexity int) int
+		Body    func(childComplexity int) int
+		ID      func(childComplexity int) int
+		Replies func(childComplexity int) int
+		User    func(childComplexity int) int
 	}
 
 	Meetup struct {
@@ -119,6 +120,7 @@ type CategoryResolver interface {
 }
 type CommentResolver interface {
 	User(ctx context.Context, obj *models.Comment) (*models.User, error)
+	Replies(ctx context.Context, obj *models.Comment) ([]*models.Comment, error)
 }
 type MeetupResolver interface {
 	User(ctx context.Context, obj *models.Meetup) (*models.User, error)
@@ -234,6 +236,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.ID(childComplexity), true
+
+	case "Comment.replies":
+		if e.complexity.Comment.Replies == nil {
+			break
+		}
+
+		return e.complexity.Comment.Replies(childComplexity), true
 
 	case "Comment.user":
 		if e.complexity.Comment.User == nil {
@@ -609,6 +618,7 @@ type Comment {
   id: ID!
   body: String!
   user: User!
+  replies: [Comment!]!
 }
 
 type Meetup {
@@ -647,6 +657,7 @@ input UpdateMeetup {
 }
 input UpdateCommentInput {
   body: String!
+  parent_id: String
 }
 input LoginInput {
   email: String!
@@ -655,6 +666,7 @@ input LoginInput {
 input CreateCommentInput {
   body: String!
   meetup_id: ID!
+  parent_id: String
 }
 input CreateCategoryInput {
   name: String!
@@ -1417,6 +1429,43 @@ func (ec *executionContext) _Comment_user(ctx context.Context, field graphql.Col
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Comment_replies(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Comment",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Comment().Replies(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Comment)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCommentᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Meetup_id(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
@@ -3866,6 +3915,12 @@ func (ec *executionContext) unmarshalInputCreateCommentInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "parent_id":
+			var err error
+			it.ParentID, err = ec.unmarshalOString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -3995,6 +4050,12 @@ func (ec *executionContext) unmarshalInputUpdateCommentInput(ctx context.Context
 		case "body":
 			var err error
 			it.Body, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parent_id":
+			var err error
+			it.ParentID, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4190,6 +4251,20 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Comment_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "replies":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_replies(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
