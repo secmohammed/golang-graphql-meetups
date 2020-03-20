@@ -1,7 +1,7 @@
  ✔ Meetup needs comments. @done (20-03-19 05:52)
  ✔ Meetup comments CRUD. @done (20-03-19 07:11)
- ≡ Meetup needs attendance and attendance count for each event.
- ≡ Meetup needs to upload photo for.
+ ✔ Meetup needs attendance and attendance count for each event. @done (20-03-20 08:17)
+ ≡ Meetup/User needs to upload photo.
  ✔ Meetup needs categories @done (20-03-19 08:09)
  ✔ Meetup need to be filtered by category. @done (20-03-20 06:39)
  ≡ Add Authorization to users M:M.
@@ -10,6 +10,7 @@
  ✔ Add guest middleware for guest queries/mutations. @done (20-03-20 06:21)
  ≡ user needs profile page.
  ≡ user needs to add interests based on category to index events according to interests.
+ ≡ user needs to search for categories using aloglia for fast search in frontend(indexing categories.)
  ≡ Optional: ability for users to create groups that they can post meetups at.
  ≡ Optional: Chat between users.
  ≡ Optional: notifications.

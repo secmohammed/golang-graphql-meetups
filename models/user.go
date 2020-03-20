@@ -12,16 +12,24 @@ import (
 
 //User model attributes.
 type User struct {
-    ID        string `json:"id"`
-    Username  string `json:"username"`
-    Email     string `json:"email"`
-    Password  string `json:"password"`
-    FirstName string `json:"first_name"`
-    LastName  string `json:"last_name"`
-    Attendees []*Attendee
+    ID         string `json:"id"`
+    Username   string `json:"username"`
+    Email      string `json:"email"`
+    Password   string `json:"password"`
+    FirstName  string `json:"first_name"`
+    LastName   string `json:"last_name"`
+    Attendees  []*Attendee
+    Categories []*Category `pg:"many2many:category_user,joinFK:category_id"`
+
     CreatedAt time.Time  `json:"created_at"`
     UpdatedAt time.Time  `json:"updated_at"`
     DeletedAt *time.Time `json:"-" pg:",soft_delete"`
+}
+
+// CategoryUser struct type
+type CategoryUser struct {
+    CategoryID string
+    UserID     string
 }
 
 //RegisterInput is used to validate the user against passed inputs while registration.

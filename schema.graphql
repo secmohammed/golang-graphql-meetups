@@ -19,6 +19,7 @@ type User {
   first_name: String!
   last_name: String!
   meetups: [Meetup!]!
+  interests: [Category!]!
   comments: [Comment!]!
 }
 type Comment {

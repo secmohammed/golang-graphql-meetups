@@ -13,6 +13,8 @@ models:
   User:
     model: github.com/secmohammed/meetups/models.User
     fields:
+      interests:
+        resolver: true
       meetups:
         resolver: true
   Meetup:
