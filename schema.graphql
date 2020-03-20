@@ -1,4 +1,9 @@
 scalar Time
+enum AttendanceStatus {
+  going
+  interested
+}
+
 type AuthToken {
   accessToken: String!
   expiredAt: Time!
@@ -80,6 +85,10 @@ input CreateCommentInput {
 input CreateCategoryInput {
   name: String!
 }
+input CreateAttendanceInput {
+  status: AttendanceStatus!
+  meetup_id: ID!
+}
 type Query {
   comments(meetup_id: ID!): [Comment!]!
   meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
@@ -89,6 +98,10 @@ type Query {
 }
 
 type Mutation {
+  createAttendance(input: CreateAttendanceInput!): Attendee!
+  updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
+  deleteAttendance(id: ID!): Boolean!
+
   createComment(input: CreateCommentInput!): Comment!
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!
   deleteComment(id: ID!): Boolean!

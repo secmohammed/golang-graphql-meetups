@@ -16,7 +16,6 @@ func (r *Resolver) Attendee() graphql.AttendeeResolver {
 
 func (a *attendeeResolver) User(ctx context.Context, obj *models.Attendee) (*models.User, error) {
     return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
-
 }
 func (a *attendeeResolver) Meetup(ctx context.Context, obj *models.Attendee) (*models.Meetup, error) {
     return loaders.GetLoaders(ctx).MeetupByID.Load(obj.MeetupID)

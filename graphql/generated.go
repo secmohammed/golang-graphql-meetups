@@ -91,17 +91,20 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateCategory func(childComplexity int, input models.CreateCategoryInput) int
-		CreateComment  func(childComplexity int, input models.CreateCommentInput) int
-		CreateMeetup   func(childComplexity int, input models.NewMeetup) int
-		DeleteCategory func(childComplexity int, name string) int
-		DeleteComment  func(childComplexity int, id string) int
-		DeleteMeetup   func(childComplexity int, id string) int
-		Login          func(childComplexity int, input *models.LoginInput) int
-		Register       func(childComplexity int, input *models.RegisterInput) int
-		UpdateCategory func(childComplexity int, name string, input *models.CreateCategoryInput) int
-		UpdateComment  func(childComplexity int, id string, input models.UpdateCommentInput) int
-		UpdateMeetup   func(childComplexity int, id string, input models.UpdateMeetup) int
+		CreateAttendance func(childComplexity int, input models.CreateAttendanceInput) int
+		CreateCategory   func(childComplexity int, input models.CreateCategoryInput) int
+		CreateComment    func(childComplexity int, input models.CreateCommentInput) int
+		CreateMeetup     func(childComplexity int, input models.NewMeetup) int
+		DeleteAttendance func(childComplexity int, id string) int
+		DeleteCategory   func(childComplexity int, name string) int
+		DeleteComment    func(childComplexity int, id string) int
+		DeleteMeetup     func(childComplexity int, id string) int
+		Login            func(childComplexity int, input *models.LoginInput) int
+		Register         func(childComplexity int, input *models.RegisterInput) int
+		UpdateAttendance func(childComplexity int, id string, status models.AttendanceStatus) int
+		UpdateCategory   func(childComplexity int, name string, input *models.CreateCategoryInput) int
+		UpdateComment    func(childComplexity int, id string, input models.UpdateCommentInput) int
+		UpdateMeetup     func(childComplexity int, id string, input models.UpdateMeetup) int
 	}
 
 	Query struct {
@@ -142,6 +145,9 @@ type MeetupResolver interface {
 	Attendees(ctx context.Context, obj *models.Meetup) ([]*models.Attendee, error)
 }
 type MutationResolver interface {
+	CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error)
+	UpdateAttendance(ctx context.Context, id string, status models.AttendanceStatus) (*models.Attendee, error)
+	DeleteAttendance(ctx context.Context, id string) (bool, error)
 	CreateComment(ctx context.Context, input models.CreateCommentInput) (*models.Comment, error)
 	UpdateComment(ctx context.Context, id string, input models.UpdateCommentInput) (*models.Comment, error)
 	DeleteComment(ctx context.Context, id string) (bool, error)
@@ -342,6 +348,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Meetup.User(childComplexity), true
 
+	case "Mutation.createAttendance":
+		if e.complexity.Mutation.CreateAttendance == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createAttendance_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateAttendance(childComplexity, args["input"].(models.CreateAttendanceInput)), true
+
 	case "Mutation.createCategory":
 		if e.complexity.Mutation.CreateCategory == nil {
 			break
@@ -377,6 +395,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateMeetup(childComplexity, args["input"].(models.NewMeetup)), true
+
+	case "Mutation.deleteAttendance":
+		if e.complexity.Mutation.DeleteAttendance == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteAttendance_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteAttendance(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteCategory":
 		if e.complexity.Mutation.DeleteCategory == nil {
@@ -437,6 +467,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Register(childComplexity, args["input"].(*models.RegisterInput)), true
+
+	case "Mutation.updateAttendance":
+		if e.complexity.Mutation.UpdateAttendance == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateAttendance_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateAttendance(childComplexity, args["id"].(string), args["status"].(models.AttendanceStatus)), true
 
 	case "Mutation.updateCategory":
 		if e.complexity.Mutation.UpdateCategory == nil {
@@ -646,6 +688,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "schema.graphql", Input: `scalar Time
+enum AttendanceStatus {
+  going
+  interested
+}
+
 type AuthToken {
   accessToken: String!
   expiredAt: Time!
@@ -727,6 +774,10 @@ input CreateCommentInput {
 input CreateCategoryInput {
   name: String!
 }
+input CreateAttendanceInput {
+  status: AttendanceStatus!
+  meetup_id: ID!
+}
 type Query {
   comments(meetup_id: ID!): [Comment!]!
   meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
@@ -736,6 +787,10 @@ type Query {
 }
 
 type Mutation {
+  createAttendance(input: CreateAttendanceInput!): Attendee!
+  updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
+  deleteAttendance(id: ID!): Boolean!
+
   createComment(input: CreateCommentInput!): Comment!
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!
   deleteComment(id: ID!): Boolean!
@@ -757,6 +812,20 @@ type Mutation {
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createAttendance_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateAttendanceInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNCreateAttendanceInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateAttendanceInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createCategory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -797,6 +866,20 @@ func (ec *executionContext) field_Mutation_createMeetup_args(ctx context.Context
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteAttendance_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -867,6 +950,28 @@ func (ec *executionContext) field_Mutation_register_args(ctx context.Context, ra
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateAttendance_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 models.AttendanceStatus
+	if tmp, ok := rawArgs["status"]; ok {
+		arg1, err = ec.unmarshalNAttendanceStatus2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendanceStatus(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["status"] = arg1
 	return args, nil
 }
 
@@ -1929,6 +2034,138 @@ func (ec *executionContext) _Meetup_attendees(ctx context.Context, field graphql
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNAttendee2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendeeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createAttendance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createAttendance_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateAttendance(rctx, args["input"].(models.CreateAttendanceInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Attendee)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNAttendee2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendee(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateAttendance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateAttendance_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateAttendance(rctx, args["id"].(string), args["status"].(models.AttendanceStatus))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Attendee)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNAttendee2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendee(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteAttendance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteAttendance_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteAttendance(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4120,6 +4357,30 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateAttendanceInput(ctx context.Context, obj interface{}) (models.CreateAttendanceInput, error) {
+	var it models.CreateAttendanceInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "status":
+			var err error
+			it.Status, err = ec.unmarshalNAttendanceStatus2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendanceStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "meetup_id":
+			var err error
+			it.MeetupID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateCategoryInput(ctx context.Context, obj interface{}) (models.CreateCategoryInput, error) {
 	var it models.CreateCategoryInput
 	var asMap = obj.(map[string]interface{})
@@ -4690,6 +4951,21 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createAttendance":
+			out.Values[i] = ec._Mutation_createAttendance(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateAttendance":
+			out.Values[i] = ec._Mutation_updateAttendance(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteAttendance":
+			out.Values[i] = ec._Mutation_deleteAttendance(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createComment":
 			out.Values[i] = ec._Mutation_createComment(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5176,6 +5452,15 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAttendanceStatus2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendanceStatus(ctx context.Context, v interface{}) (models.AttendanceStatus, error) {
+	var res models.AttendanceStatus
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNAttendanceStatus2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendanceStatus(ctx context.Context, sel ast.SelectionSet, v models.AttendanceStatus) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNAttendee2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendee(ctx context.Context, sel ast.SelectionSet, v models.Attendee) graphql.Marshaler {
 	return ec._Attendee(ctx, sel, &v)
 }
@@ -5369,6 +5654,10 @@ func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋsecmohammedᚋmeet
 		return graphql.Null
 	}
 	return ec._Comment(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateAttendanceInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateAttendanceInput(ctx context.Context, v interface{}) (models.CreateAttendanceInput, error) {
+	return ec.unmarshalInputCreateAttendanceInput(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNCreateCategoryInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateCategoryInput(ctx context.Context, v interface{}) (models.CreateCategoryInput, error) {

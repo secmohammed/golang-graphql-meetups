@@ -42,7 +42,7 @@ func (c *CategoriesRepo) Update(category *models.Category) (*models.Category, er
 // GetByName is used to fetch meetup by name.
 func (c *CategoriesRepo) GetByName(name string) (*models.Category, error) {
     category := models.Category{}
-    err := c.DB.Model(&category).Where("name = ?", name).Relation("Meetups").First()
+    err := c.DB.Model(&category).Where("name = ?", name).First()
     if err != nil {
         return nil, err
     }
@@ -53,22 +53,4 @@ func (c *CategoriesRepo) GetByName(name string) (*models.Category, error) {
 func (c *CategoriesRepo) Delete(category *models.Category) error {
     _, err := c.DB.Model(category).Where("id = ?", category.ID).Delete()
     return err
-}
-
-//GetMeetupsForCategory is used to get the meetups for th associated category.
-func (c *CategoriesRepo) GetMeetupsForCategory(id string) ([]*models.Meetup, error) {
-    category := new(models.Category)
-    err := c.DB.Model(&category).Relation("Meetups").Where("id = ?", id).First()
-    meetups := make([]*models.Meetup, len(category.Meetups))
-    for _, meetup := range category.Meetups {
-        meetups = append(meetups, meetup)
-    }
-    return meetups, err
-}
-
-// GetCategoriesForUser is used to get comments for the passed user by its id.
-func (c *CategoriesRepo) GetCategoriesForUser(user *models.User) ([]*models.Category, error) {
-    var categories []*models.Category
-    err := c.DB.Model(&categories).Where("user_id = ? ", user.ID).Order("id").Select()
-    return categories, err
 }
