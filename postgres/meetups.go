@@ -13,6 +13,35 @@ type MeetupsRepo struct {
     DB *pg.DB
 }
 
+func prepareMeetupQuery(query *orm.Query, filter *models.MeetupFilterInput, limit, offset *int) (*orm.Query, error) {
+    if filter != nil && filter.Name != nil && *filter.Name != "" {
+        query.Where("meetup.name = ?", filter.Name)
+    }
+    if filter != nil && filter.StartDate != nil && *filter.StartDate != "" {
+        startDate, err := time.Parse("2006-01-02", *filter.StartDate)
+        if err != nil {
+            return nil, err
+        }
+        query.Where("start_date >= ?", startDate)
+    }
+    if filter != nil && filter.EndDate != nil && *filter.EndDate != "" {
+        endDate, err := time.Parse("2006-01-02", *filter.EndDate)
+        if err != nil {
+            return nil, err
+        }
+        query.Where("end_date <= ?", endDate)
+    }
+
+    if limit != nil {
+        query.Limit(*limit)
+    }
+    if offset != nil {
+        query.Offset(*offset)
+    }
+    return query, nil
+
+}
+
 //GetFilteredMeetupsBasedOnUser is used to fetch the meetups based on the filters such as
 //start_date,end_date and name when provided
 //in addition to the interests of the user.
@@ -39,29 +68,9 @@ func (m *MeetupsRepo) GetFilteredMeetupsBasedOnUser(userID string, filter *model
     query := m.DB.Model(&meetups).Relation("Categories", func(q *orm.Query) (*orm.Query, error) {
         return q.Where("category_meetup.category_id in (?)", pg.In(ids)), nil
     })
-    if filter != nil && filter.Name != nil && *filter.Name != "" {
-        query.Where("meetup.name = ?", filter.Name)
-    }
-    if filter != nil && filter.StartDate != nil && *filter.StartDate != "" {
-        startDate, err := time.Parse("2006-01-02", *filter.StartDate)
-        if err != nil {
-            return nil, err
-        }
-        query.Where("start_date >= ?", startDate)
-    }
-    if filter != nil && filter.EndDate != nil && *filter.EndDate != "" {
-        endDate, err := time.Parse("2006-01-02", *filter.EndDate)
-        if err != nil {
-            return nil, err
-        }
-        query.Where("end_date <= ?", endDate)
-    }
-
-    if limit != nil {
-        query.Limit(*limit)
-    }
-    if offset != nil {
-        query.Offset(*offset)
+    query, err = prepareMeetupQuery(query, filter, limit, offset)
+    if err != nil {
+        return nil, err
     }
     err = query.Select()
     if err != nil {
@@ -86,31 +95,11 @@ func (m *MeetupsRepo) GetFilteredMeetupsBasedOnUser(userID string, filter *model
 func (m *MeetupsRepo) GetMeetups(filter *models.MeetupFilterInput, limit, offset *int) ([]*models.Meetup, error) {
     var meetups []*models.Meetup
     query := m.DB.Model(&meetups).Order("id")
-    if filter != nil && filter.Name != nil && *filter.Name != "" {
-        query.Where("name = ?", filter.Name)
-
+    query, err := prepareMeetupQuery(query, filter, limit, offset)
+    if err != nil {
+        return nil, err
     }
-    if filter != nil && filter.StartDate != nil && *filter.StartDate != "" {
-        startDate, err := time.Parse("2006-01-02", *filter.StartDate)
-        if err != nil {
-            return nil, err
-        }
-        query.Where("start_date >= ?", startDate)
-    }
-    if filter != nil && filter.EndDate != nil && *filter.EndDate != "" {
-        endDate, err := time.Parse("2006-01-02", *filter.EndDate)
-        if err != nil {
-            return nil, err
-        }
-        query.Where("end_date <= ?", endDate)
-    }
-    if limit != nil {
-        query.Limit(*limit)
-    }
-    if offset != nil {
-        query.Offset(*offset)
-    }
-    err := query.Select()
+    err = query.Select()
     if err != nil {
         return nil, err
     }
