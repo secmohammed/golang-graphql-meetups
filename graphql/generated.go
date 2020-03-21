@@ -804,6 +804,7 @@ input MeetupFilterInput {
   name: String
   start_date: String
   end_date: String
+  location: String
 }
 input UpdateMeetupInput {
   name: String!
@@ -4782,6 +4783,12 @@ func (ec *executionContext) unmarshalInputMeetupFilterInput(ctx context.Context,
 		case "end_date":
 			var err error
 			it.EndDate, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "location":
+			var err error
+			it.Location, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

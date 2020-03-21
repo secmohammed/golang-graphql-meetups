@@ -45,6 +45,7 @@ type MeetupFilterInput struct {
     Name      *string `json:"name"`
     StartDate *string `json:"start_date"`
     EndDate   *string `json:"end_date"`
+    Location  *string `json:"location"`
 }
 
 //Validate is used to validate the passed values against the struct validation props.

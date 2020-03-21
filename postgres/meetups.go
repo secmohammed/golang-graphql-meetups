@@ -24,6 +24,9 @@ func prepareMeetupQuery(query *orm.Query, filter *models.MeetupFilterInput, limi
         }
         query.Where("start_date >= ?", startDate)
     }
+    if filter != nil && filter.Location != nil && *filter.Location != "" {
+        query.Where("meetup.location LIKE ?", "%"+*filter.Location+"%")
+    }
     if filter != nil && filter.EndDate != nil && *filter.EndDate != "" {
         endDate, err := time.Parse("2006-01-02", *filter.EndDate)
         if err != nil {
