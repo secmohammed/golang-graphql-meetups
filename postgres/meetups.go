@@ -2,6 +2,7 @@ package postgres
 
 import (
     "github.com/go-pg/pg"
+    "github.com/go-pg/pg/orm"
     "github.com/secmohammed/meetups/models"
 )
 
@@ -10,11 +11,63 @@ type MeetupsRepo struct {
     DB *pg.DB
 }
 
+func (m *MeetupsRepo) GetFilteredMeetupsBasedOnUser(userID string, filter *models.MeetupFilterInput, limit, offset *int) ([]*models.Meetup, error) {
+
+    var meetups []*models.Meetup
+    var categories []*models.Category
+    // fetch the interests of user.
+    err := m.DB.Model(&categories).Relation("Users", func(q *orm.Query) (*orm.Query, error) {
+        return q.Where("category_user.user_id = ?", userID), nil
+    }).Select()
+    // pluck the ids of them.
+    var ids []string
+    for _, category := range categories {
+        for _, user := range category.Users {
+            if userID == user.ID {
+                ids = append(ids, category.ID)
+            }
+        }
+    }
+    // select meetup which have these categories
+
+    // filter query with specific id doesn't work due to that we are selecting all of the meetups first.
+    query := m.DB.Model(&meetups).Relation("Categories", func(q *orm.Query) (*orm.Query, error) {
+        return q.Where("category_meetup.category_id in (?)", pg.In(ids)), nil
+    })
+    if filter != nil && filter.Name != nil && *filter.Name != "" {
+        query.Where("meetup.name = ?", filter.Name)
+    }
+    if limit != nil {
+        query.Limit(*limit)
+    }
+    if offset != nil {
+        query.Offset(*offset)
+    }
+    err = query.Select()
+    if err != nil {
+        return nil, err
+    }
+    // This is bullshit :)
+    var result []*models.Meetup
+    for _, meetup := range meetups {
+        for _, category := range meetup.Categories {
+            for _, id := range ids {
+                if id == category.ID {
+                    result = append(result, meetup)
+                }
+            }
+        }
+    }
+    return result, nil
+
+}
+
 // GetMeetups is used to get meetups from database.
 func (m *MeetupsRepo) GetMeetups(filter *models.MeetupFilterInput, limit, offset *int) ([]*models.Meetup, error) {
     var meetups []*models.Meetup
     query := m.DB.Model(&meetups).Order("id")
     if filter != nil && filter.Name != nil && *filter.Name != "" {
+        query.Where("name = ?", filter.Name)
 
     }
     if limit != nil {

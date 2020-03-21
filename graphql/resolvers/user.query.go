@@ -18,6 +18,14 @@ func (r *Resolver) User() graphql.UserResolver {
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
     return r.UsersRepo.GetByID(id)
 }
+func (r *queryResolver) FilteredMeetupsForUser(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return nil, ErrUnauthenticated
+    }
+    return r.MeetupsRepo.GetFilteredMeetupsBasedOnUser(currentUser.ID, filter, limit, offset)
+}
+
 func (r *queryResolver) AuthenticatedUser(ctx context.Context) (*models.User, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {

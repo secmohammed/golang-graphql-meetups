@@ -108,13 +108,14 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AuthenticatedUser func(childComplexity int) int
-		Categories        func(childComplexity int, limit *int, offset *int) int
-		Category          func(childComplexity int, name string) int
-		Comments          func(childComplexity int, meetupID string) int
-		Meetup            func(childComplexity int, id string) int
-		Meetups           func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
-		User              func(childComplexity int, id string) int
+		AuthenticatedUser      func(childComplexity int) int
+		Categories             func(childComplexity int, limit *int, offset *int) int
+		Category               func(childComplexity int, name string) int
+		Comments               func(childComplexity int, meetupID string) int
+		FilteredMeetupsForUser func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
+		Meetup                 func(childComplexity int, id string) int
+		Meetups                func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
+		User                   func(childComplexity int, id string) int
 	}
 
 	User struct {
@@ -166,6 +167,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Comments(ctx context.Context, meetupID string) ([]*models.Comment, error)
 	Meetups(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error)
+	FilteredMeetupsForUser(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error)
 	Meetup(ctx context.Context, id string) (*models.Meetup, error)
 	AuthenticatedUser(ctx context.Context) (*models.User, error)
 	User(ctx context.Context, id string) (*models.User, error)
@@ -565,6 +567,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Comments(childComplexity, args["meetup_id"].(string)), true
 
+	case "Query.filteredMeetupsForUser":
+		if e.complexity.Query.FilteredMeetupsForUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_filteredMeetupsForUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.FilteredMeetupsForUser(childComplexity, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int)), true
+
 	case "Query.meetup":
 		if e.complexity.Query.Meetup == nil {
 			break
@@ -824,6 +838,12 @@ type Query {
     limit: Int = 10
     offset: Int = 0
   ): [Meetup!]!
+  filteredMeetupsForUser(
+    filter: MeetupFilterInput
+    limit: Int = 10
+    offset: Int = 0
+  ): [Meetup!]!
+
   meetup(id: ID!): Meetup!
   authenticatedUser: User!
 
@@ -1148,6 +1168,36 @@ func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawAr
 		}
 	}
 	args["meetup_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_filteredMeetupsForUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *models.MeetupFilterInput
+	if tmp, ok := rawArgs["filter"]; ok {
+		arg0, err = ec.unmarshalOMeetupFilterInput2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilterInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
 	return args, nil
 }
 
@@ -2783,6 +2833,50 @@ func (ec *executionContext) _Query_meetups(ctx context.Context, field graphql.Co
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().Meetups(rctx, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Meetup)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNMeetup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_filteredMeetupsForUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_filteredMeetupsForUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().FilteredMeetupsForUser(rctx, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5284,6 +5378,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_meetups(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "filteredMeetupsForUser":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_filteredMeetupsForUser(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
