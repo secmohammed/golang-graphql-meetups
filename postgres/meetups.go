@@ -1,6 +1,8 @@
 package postgres
 
 import (
+    "time"
+
     "github.com/go-pg/pg"
     "github.com/go-pg/pg/orm"
     "github.com/secmohammed/meetups/models"
@@ -11,6 +13,9 @@ type MeetupsRepo struct {
     DB *pg.DB
 }
 
+//GetFilteredMeetupsBasedOnUser is used to fetch the meetups based on the filters such as
+//start_date,end_date and name when provided
+//in addition to the interests of the user.
 func (m *MeetupsRepo) GetFilteredMeetupsBasedOnUser(userID string, filter *models.MeetupFilterInput, limit, offset *int) ([]*models.Meetup, error) {
 
     var meetups []*models.Meetup
@@ -37,6 +42,21 @@ func (m *MeetupsRepo) GetFilteredMeetupsBasedOnUser(userID string, filter *model
     if filter != nil && filter.Name != nil && *filter.Name != "" {
         query.Where("meetup.name = ?", filter.Name)
     }
+    if filter != nil && filter.StartDate != nil && *filter.StartDate != "" {
+        startDate, err := time.Parse("2006-01-02", *filter.StartDate)
+        if err != nil {
+            return nil, err
+        }
+        query.Where("start_date >= ?", startDate)
+    }
+    if filter != nil && filter.EndDate != nil && *filter.EndDate != "" {
+        endDate, err := time.Parse("2006-01-02", *filter.EndDate)
+        if err != nil {
+            return nil, err
+        }
+        query.Where("end_date <= ?", endDate)
+    }
+
     if limit != nil {
         query.Limit(*limit)
     }
@@ -69,6 +89,20 @@ func (m *MeetupsRepo) GetMeetups(filter *models.MeetupFilterInput, limit, offset
     if filter != nil && filter.Name != nil && *filter.Name != "" {
         query.Where("name = ?", filter.Name)
 
+    }
+    if filter != nil && filter.StartDate != nil && *filter.StartDate != "" {
+        startDate, err := time.Parse("2006-01-02", *filter.StartDate)
+        if err != nil {
+            return nil, err
+        }
+        query.Where("start_date >= ?", startDate)
+    }
+    if filter != nil && filter.EndDate != nil && *filter.EndDate != "" {
+        endDate, err := time.Parse("2006-01-02", *filter.EndDate)
+        if err != nil {
+            return nil, err
+        }
+        query.Where("end_date <= ?", endDate)
     }
     if limit != nil {
         query.Limit(*limit)
