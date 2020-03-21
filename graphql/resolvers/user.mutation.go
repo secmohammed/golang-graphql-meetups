@@ -4,9 +4,11 @@ import (
     "context"
     "errors"
     "log"
+    "os"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+    "github.com/secmohammed/meetups/utils"
 )
 
 var (
@@ -70,6 +72,17 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
         FirstName: input.FirstName,
         LastName:  input.LastName,
     }
+    if input.Avatar != nil {
+        info, status := utils.UploadFile(input.Avatar, os.Getenv("AVATAR_STORAGE_PATH"))
+        if !status {
+            return nil, errors.New(info)
+        }
+        if status {
+            user.Avatar = info
+        }
+
+    }
+
     err = user.HashPassword(input.Password)
     if err != nil {
         return nil, errors.New("something went wrong")

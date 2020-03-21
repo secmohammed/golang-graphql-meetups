@@ -4,6 +4,7 @@ import (
     "os"
     "time"
 
+    "github.com/99designs/gqlgen/graphql"
     "github.com/dgrijalva/jwt-go"
     "github.com/go-playground/validator"
 
@@ -20,10 +21,10 @@ type User struct {
     LastName   string `json:"last_name"`
     Attendees  []*Attendee
     Categories []*Category `pg:"many2many:category_user"`
-
-    CreatedAt time.Time  `json:"created_at"`
-    UpdatedAt time.Time  `json:"updated_at"`
-    DeletedAt *time.Time `json:"-" pg:",soft_delete"`
+    Avatar     string      `json:"avatar"`
+    CreatedAt  time.Time   `json:"created_at"`
+    UpdatedAt  time.Time   `json:"updated_at"`
+    DeletedAt  *time.Time  `json:"-" pg:",soft_delete"`
 }
 
 // CategoryUser struct type
@@ -34,12 +35,13 @@ type CategoryUser struct {
 
 //RegisterInput is used to validate the user against passed inputs while registration.
 type RegisterInput struct {
-    Username             string `json:"username" validate:"required,min=3,max=32"`
-    Email                string `json:"email" validate:"required,email"`
-    Password             string `json:"password" validate:"required,min=8,max=32,eqfield=PasswordConfirmation"`
-    PasswordConfirmation string `json:"password_confirmation" validate:"required"`
-    FirstName            string `json:"first_name" validate:"required,min=3,max=32"`
-    LastName             string `json:"last_name" validate:"required,min=3,max=32"`
+    Username             string          `json:"username" validate:"required,min=3,max=32"`
+    Email                string          `json:"email" validate:"required,email"`
+    Password             string          `json:"password" validate:"required,min=8,max=32,eqfield=PasswordConfirmation"`
+    PasswordConfirmation string          `json:"password_confirmation" validate:"required"`
+    FirstName            string          `json:"first_name" validate:"required,min=3,max=32"`
+    LastName             string          `json:"last_name" validate:"required,min=3,max=32"`
+    Avatar               *graphql.Upload `json:"avatar"`
 }
 
 //LoginInput is used to validate the user against passed inputs while logging in.
