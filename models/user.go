@@ -19,7 +19,7 @@ type User struct {
     FirstName  string `json:"first_name"`
     LastName   string `json:"last_name"`
     Attendees  []*Attendee
-    Categories []*Category `pg:"many2many:category_user,joinFK:category_id"`
+    Categories []*Category `pg:"many2many:category_user"`
 
     CreatedAt time.Time  `json:"created_at"`
     UpdatedAt time.Time  `json:"updated_at"`

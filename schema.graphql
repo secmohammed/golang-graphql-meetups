@@ -51,8 +51,10 @@ type Attendee {
   meetup: Meetup!
 }
 
-input NewMeetup {
+input CreateMeetupInput {
   name: String!
+  start_date: String!
+  end_date: String!
   description: String!
 }
 input RegisterInput {
@@ -63,11 +65,15 @@ input RegisterInput {
   first_name: String!
   last_name: String!
 }
-input MeetupFilter {
+input MeetupFilterInput {
   name: String
+  start_date: String
+  end_date: String
 }
-input UpdateMeetup {
+input UpdateMeetupInput {
   name: String!
+  start_date: String!
+  end_date: String!
   description: String!
 }
 input UpdateCommentInput {
@@ -92,7 +98,11 @@ input CreateAttendanceInput {
 }
 type Query {
   comments(meetup_id: ID!): [Comment!]!
-  meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
+  meetups(
+    filter: MeetupFilterInput
+    limit: Int = 10
+    offset: Int = 0
+  ): [Meetup!]!
   meetup(id: ID!): Meetup!
   authenticatedUser: User!
 
@@ -117,7 +127,7 @@ type Mutation {
   register(input: RegisterInput): Auth!
   login(input: LoginInput): Auth!
 
-  createMeetup(input: NewMeetup!): Meetup!
-  updateMeetup(id: ID!, input: UpdateMeetup!): Meetup!
+  createMeetup(input: CreateMeetupInput!): Meetup!
+  updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
   deleteMeetup(id: ID!): Boolean!
 }

@@ -6,6 +6,7 @@ import (
     "time"
 
     "github.com/go-pg/pg"
+    "github.com/go-pg/pg/orm"
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/utils"
 )
@@ -113,20 +114,26 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
             wait:     wait,
             maxBatch: 100,
             fetch: func(ids []string) ([][]*models.Category, []error) {
-                var users []*models.User
-                err := db.Model(&users).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Categories").Select()
+                var categories []*models.Category
+                err := db.Model(&categories).Relation("Users", func(q *orm.Query) (*orm.Query, error) {
+                    return q.Where("category_user.user_id in (?)", pg.In(ids)), nil
+                }).Select()
+
                 if err != nil {
                     return nil, []error{err}
                 }
-                u := make(map[string]*models.User, len(ids))
-                for _, user := range users {
-                    u[user.ID] = user
+                categoriesCollection := make([][]*models.Category, len(ids))
+
+                for _, category := range categories {
+                    for _, user := range category.Users {
+                        for i, id := range ids {
+                            if id == user.ID {
+                                categoriesCollection[i] = append(categoriesCollection[i], category) 
+                            }
+                        }
+                    }
                 }
-                categories := make([][]*models.Category, len(ids))
-                for i, id := range ids {
-                    categories[i] = u[id].Categories
-                }
-                return categories, nil
+                return categoriesCollection, nil
             },
         }
         loaders.AttendeesByMeetup = &AttendeesLoader{

@@ -13,7 +13,8 @@ func (r *Resolver) Meetup() graphql.MeetupResolver {
     return &meetupResolver{r}
 }
 
-func (r *queryResolver) Meetups(ctx context.Context, filter *models.MeetupFilter, limit *int, offset *int) ([]*models.Meetup, error) {
+func (r *queryResolver) Meetups(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error) {
+    //TODO: validate first.
     return r.MeetupsRepo.GetMeetups(filter, limit, offset)
 }
 func (r *queryResolver) Meetup(ctx context.Context, id string) (*models.Meetup, error) {

@@ -94,7 +94,7 @@ type ComplexityRoot struct {
 		CreateAttendance func(childComplexity int, input models.CreateAttendanceInput) int
 		CreateCategory   func(childComplexity int, input models.CreateCategoryInput) int
 		CreateComment    func(childComplexity int, input models.CreateCommentInput) int
-		CreateMeetup     func(childComplexity int, input models.NewMeetup) int
+		CreateMeetup     func(childComplexity int, input models.CreateMeetupInput) int
 		DeleteAttendance func(childComplexity int, id string) int
 		DeleteCategory   func(childComplexity int, name string) int
 		DeleteComment    func(childComplexity int, id string) int
@@ -104,7 +104,7 @@ type ComplexityRoot struct {
 		UpdateAttendance func(childComplexity int, id string, status models.AttendanceStatus) int
 		UpdateCategory   func(childComplexity int, name string, input *models.CreateCategoryInput) int
 		UpdateComment    func(childComplexity int, id string, input models.UpdateCommentInput) int
-		UpdateMeetup     func(childComplexity int, id string, input models.UpdateMeetup) int
+		UpdateMeetup     func(childComplexity int, id string, input models.UpdateMeetupInput) int
 	}
 
 	Query struct {
@@ -113,7 +113,7 @@ type ComplexityRoot struct {
 		Category          func(childComplexity int, name string) int
 		Comments          func(childComplexity int, meetupID string) int
 		Meetup            func(childComplexity int, id string) int
-		Meetups           func(childComplexity int, filter *models.MeetupFilter, limit *int, offset *int) int
+		Meetups           func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
 		User              func(childComplexity int, id string) int
 	}
 
@@ -159,13 +159,13 @@ type MutationResolver interface {
 	DeleteCategory(ctx context.Context, name string) (bool, error)
 	Register(ctx context.Context, input *models.RegisterInput) (*models.Auth, error)
 	Login(ctx context.Context, input *models.LoginInput) (*models.Auth, error)
-	CreateMeetup(ctx context.Context, input models.NewMeetup) (*models.Meetup, error)
-	UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetup) (*models.Meetup, error)
+	CreateMeetup(ctx context.Context, input models.CreateMeetupInput) (*models.Meetup, error)
+	UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetupInput) (*models.Meetup, error)
 	DeleteMeetup(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
 	Comments(ctx context.Context, meetupID string) ([]*models.Comment, error)
-	Meetups(ctx context.Context, filter *models.MeetupFilter, limit *int, offset *int) ([]*models.Meetup, error)
+	Meetups(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error)
 	Meetup(ctx context.Context, id string) (*models.Meetup, error)
 	AuthenticatedUser(ctx context.Context) (*models.User, error)
 	User(ctx context.Context, id string) (*models.User, error)
@@ -400,7 +400,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateMeetup(childComplexity, args["input"].(models.NewMeetup)), true
+		return e.complexity.Mutation.CreateMeetup(childComplexity, args["input"].(models.CreateMeetupInput)), true
 
 	case "Mutation.deleteAttendance":
 		if e.complexity.Mutation.DeleteAttendance == nil {
@@ -520,7 +520,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateMeetup(childComplexity, args["id"].(string), args["input"].(models.UpdateMeetup)), true
+		return e.complexity.Mutation.UpdateMeetup(childComplexity, args["id"].(string), args["input"].(models.UpdateMeetupInput)), true
 
 	case "Query.authenticatedUser":
 		if e.complexity.Query.AuthenticatedUser == nil {
@@ -587,7 +587,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Meetups(childComplexity, args["filter"].(*models.MeetupFilter), args["limit"].(*int), args["offset"].(*int)), true
+		return e.complexity.Query.Meetups(childComplexity, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int)), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -772,8 +772,10 @@ type Attendee {
   meetup: Meetup!
 }
 
-input NewMeetup {
+input CreateMeetupInput {
   name: String!
+  start_date: String!
+  end_date: String!
   description: String!
 }
 input RegisterInput {
@@ -784,11 +786,15 @@ input RegisterInput {
   first_name: String!
   last_name: String!
 }
-input MeetupFilter {
+input MeetupFilterInput {
   name: String
+  start_date: String
+  end_date: String
 }
-input UpdateMeetup {
+input UpdateMeetupInput {
   name: String!
+  start_date: String!
+  end_date: String!
   description: String!
 }
 input UpdateCommentInput {
@@ -813,7 +819,11 @@ input CreateAttendanceInput {
 }
 type Query {
   comments(meetup_id: ID!): [Comment!]!
-  meetups(filter: MeetupFilter, limit: Int = 10, offset: Int = 0): [Meetup!]!
+  meetups(
+    filter: MeetupFilterInput
+    limit: Int = 10
+    offset: Int = 0
+  ): [Meetup!]!
   meetup(id: ID!): Meetup!
   authenticatedUser: User!
 
@@ -838,8 +848,8 @@ type Mutation {
   register(input: RegisterInput): Auth!
   login(input: LoginInput): Auth!
 
-  createMeetup(input: NewMeetup!): Meetup!
-  updateMeetup(id: ID!, input: UpdateMeetup!): Meetup!
+  createMeetup(input: CreateMeetupInput!): Meetup!
+  updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
   deleteMeetup(id: ID!): Boolean!
 }
 `},
@@ -894,9 +904,9 @@ func (ec *executionContext) field_Mutation_createComment_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_createMeetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.NewMeetup
+	var arg0 models.CreateMeetupInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNNewMeetup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNewMeetup(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMeetupInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1066,9 +1076,9 @@ func (ec *executionContext) field_Mutation_updateMeetup_args(ctx context.Context
 		}
 	}
 	args["id"] = arg0
-	var arg1 models.UpdateMeetup
+	var arg1 models.UpdateMeetupInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg1, err = ec.unmarshalNUpdateMeetup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateMeetup(ctx, tmp)
+		arg1, err = ec.unmarshalNUpdateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateMeetupInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1158,9 +1168,9 @@ func (ec *executionContext) field_Query_meetup_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_meetups_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.MeetupFilter
+	var arg0 *models.MeetupFilterInput
 	if tmp, ok := rawArgs["filter"]; ok {
-		arg0, err = ec.unmarshalOMeetupFilter2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilter(ctx, tmp)
+		arg0, err = ec.unmarshalOMeetupFilterInput2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilterInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2596,7 +2606,7 @@ func (ec *executionContext) _Mutation_createMeetup(ctx context.Context, field gr
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMeetup(rctx, args["input"].(models.NewMeetup))
+		return ec.resolvers.Mutation().CreateMeetup(rctx, args["input"].(models.CreateMeetupInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2640,7 +2650,7 @@ func (ec *executionContext) _Mutation_updateMeetup(ctx context.Context, field gr
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMeetup(rctx, args["id"].(string), args["input"].(models.UpdateMeetup))
+		return ec.resolvers.Mutation().UpdateMeetup(rctx, args["id"].(string), args["input"].(models.UpdateMeetupInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2772,7 +2782,7 @@ func (ec *executionContext) _Query_meetups(ctx context.Context, field graphql.Co
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Meetups(rctx, args["filter"].(*models.MeetupFilter), args["limit"].(*int), args["offset"].(*int))
+		return ec.resolvers.Query().Meetups(rctx, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4597,6 +4607,42 @@ func (ec *executionContext) unmarshalInputCreateCommentInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateMeetupInput(ctx context.Context, obj interface{}) (models.CreateMeetupInput, error) {
+	var it models.CreateMeetupInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "start_date":
+			var err error
+			it.StartDate, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "end_date":
+			var err error
+			it.EndDate, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj interface{}) (models.LoginInput, error) {
 	var it models.LoginInput
 	var asMap = obj.(map[string]interface{})
@@ -4621,8 +4667,8 @@ func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj in
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputMeetupFilter(ctx context.Context, obj interface{}) (models.MeetupFilter, error) {
-	var it models.MeetupFilter
+func (ec *executionContext) unmarshalInputMeetupFilterInput(ctx context.Context, obj interface{}) (models.MeetupFilterInput, error) {
+	var it models.MeetupFilterInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -4633,27 +4679,15 @@ func (ec *executionContext) unmarshalInputMeetupFilter(ctx context.Context, obj 
 			if err != nil {
 				return it, err
 			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputNewMeetup(ctx context.Context, obj interface{}) (models.NewMeetup, error) {
-	var it models.NewMeetup
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
+		case "start_date":
 			var err error
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			it.StartDate, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "description":
+		case "end_date":
 			var err error
-			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			it.EndDate, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4735,8 +4769,8 @@ func (ec *executionContext) unmarshalInputUpdateCommentInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateMeetup(ctx context.Context, obj interface{}) (models.UpdateMeetup, error) {
-	var it models.UpdateMeetup
+func (ec *executionContext) unmarshalInputUpdateMeetupInput(ctx context.Context, obj interface{}) (models.UpdateMeetupInput, error) {
+	var it models.UpdateMeetupInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -4744,6 +4778,18 @@ func (ec *executionContext) unmarshalInputUpdateMeetup(ctx context.Context, obj 
 		case "name":
 			var err error
 			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "start_date":
+			var err error
+			it.StartDate, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "end_date":
+			var err error
+			it.EndDate, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5878,6 +5924,10 @@ func (ec *executionContext) unmarshalNCreateCommentInput2githubᚗcomᚋsecmoham
 	return ec.unmarshalInputCreateCommentInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNCreateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMeetupInput(ctx context.Context, v interface{}) (models.CreateMeetupInput, error) {
+	return ec.unmarshalInputCreateMeetupInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
@@ -5943,10 +5993,6 @@ func (ec *executionContext) marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetu
 	return ec._Meetup(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNNewMeetup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNewMeetup(ctx context.Context, v interface{}) (models.NewMeetup, error) {
-	return ec.unmarshalInputNewMeetup(ctx, v)
-}
-
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -5979,8 +6025,8 @@ func (ec *executionContext) unmarshalNUpdateCommentInput2githubᚗcomᚋsecmoham
 	return ec.unmarshalInputUpdateCommentInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNUpdateMeetup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateMeetup(ctx context.Context, v interface{}) (models.UpdateMeetup, error) {
-	return ec.unmarshalInputUpdateMeetup(ctx, v)
+func (ec *executionContext) unmarshalNUpdateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateMeetupInput(ctx context.Context, v interface{}) (models.UpdateMeetupInput, error) {
+	return ec.unmarshalInputUpdateMeetupInput(ctx, v)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
@@ -6293,15 +6339,15 @@ func (ec *executionContext) unmarshalOLoginInput2ᚖgithubᚗcomᚋsecmohammed�
 	return &res, err
 }
 
-func (ec *executionContext) unmarshalOMeetupFilter2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilter(ctx context.Context, v interface{}) (models.MeetupFilter, error) {
-	return ec.unmarshalInputMeetupFilter(ctx, v)
+func (ec *executionContext) unmarshalOMeetupFilterInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilterInput(ctx context.Context, v interface{}) (models.MeetupFilterInput, error) {
+	return ec.unmarshalInputMeetupFilterInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalOMeetupFilter2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilter(ctx context.Context, v interface{}) (*models.MeetupFilter, error) {
+func (ec *executionContext) unmarshalOMeetupFilterInput2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilterInput(ctx context.Context, v interface{}) (*models.MeetupFilterInput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOMeetupFilter2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilter(ctx, v)
+	res, err := ec.unmarshalOMeetupFilterInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupFilterInput(ctx, v)
 	return &res, err
 }
 

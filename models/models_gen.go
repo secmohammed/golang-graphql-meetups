@@ -2,12 +2,7 @@
 
 package models
 
-import (
-	"fmt"
-	"io"
-	"strconv"
-	"time"
-)
+import "time"
 
 type Auth struct {
 	AuthToken *AuthToken `json:"authToken"`
@@ -17,62 +12,4 @@ type Auth struct {
 type AuthToken struct {
 	AccessToken string    `json:"accessToken"`
 	ExpiredAt   time.Time `json:"expiredAt"`
-}
-type CreateAttendanceInput struct {
-	Status   AttendanceStatus `json:"status"`
-	MeetupID string           `json:"meetup_id"`
-}
-type MeetupFilter struct {
-	Name *string `json:"name"`
-}
-
-type NewMeetup struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type UpdateMeetup struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type AttendanceStatus string
-
-const (
-	AttendanceStatusGoing      AttendanceStatus = "going"
-	AttendanceStatusInterested AttendanceStatus = "interested"
-)
-
-var AllAttendanceStatus = []AttendanceStatus{
-	AttendanceStatusGoing,
-	AttendanceStatusInterested,
-}
-
-func (e AttendanceStatus) IsValid() bool {
-	switch e {
-	case AttendanceStatusGoing, AttendanceStatusInterested:
-		return true
-	}
-	return false
-}
-
-func (e AttendanceStatus) String() string {
-	return string(e)
-}
-
-func (e *AttendanceStatus) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = AttendanceStatus(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid AttendanceStatus", str)
-	}
-	return nil
-}
-
-func (e AttendanceStatus) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
 }

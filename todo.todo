@@ -5,11 +5,12 @@
  ✔ Meetup needs categories @done (20-03-19 08:09)
  ✔ Meetup need to be filtered by category. @done (20-03-20 06:39)
  ≡ Add Authorization to users M:M.
- ≡ Meetup needs Time (Day, from-to hours)  and location.
+ ✔ Meetup needs Time (Day, from-to hours)  and location. @done (20-03-21 05:41)
  ✔ Modify comments to contain replies as well. @done (20-03-20 05:53)
  ✔ Add guest middleware for guest queries/mutations. @done (20-03-20 06:21)
- ≡ user needs profile page.
- ≡ user needs to add interests based on category to index events according to interests.
+ ✔ user needs profile page. @done (20-03-20 10:30)
+ ✔ user needs to add interests based on category. @done (20-03-21 07:04)
+ ≡ index events according to users based on interests
  ≡ user needs to search for categories using aloglia for fast search in frontend(indexing categories.)
  ≡ Optional: ability for users to create groups that they can post meetups at.
  ≡ Optional: Chat between users.

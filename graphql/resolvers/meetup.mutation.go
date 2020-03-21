@@ -34,7 +34,7 @@ func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, e
     }
     return true, nil
 }
-func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetup) (*models.Meetup, error) {
+func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetupInput) (*models.Meetup, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
         return nil, ErrUnauthenticated
@@ -49,10 +49,16 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input mo
     if meetup.UserID != currentUser.ID {
         return nil, errors.New("Unauthorized attempt")
     }
-    meetup.Name = input.Name
-    meetup.Description = input.Description
-    if err := meetup.Validate(); err != nil {
+    if err := input.Validate(); err != nil {
         return nil, err
+    }
+    meetup = &models.Meetup{
+        ID:          id,
+        Name:        input.Name,
+        Description: input.Description,
+        StartDate:   input.StartDate,
+        EndDate:     input.EndDate,
+        Location:    input.Location,
     }
     meetup, err = m.MeetupsRepo.Update(meetup)
     if err != nil {
@@ -60,19 +66,21 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input mo
     }
     return meetup, nil
 }
-func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.NewMeetup) (*models.Meetup, error) {
+func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.CreateMeetupInput) (*models.Meetup, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
         return nil, ErrUnauthenticated
     }
-
+    if err := input.Validate(); err != nil {
+        return nil, err
+    }
     meetup := &models.Meetup{
         Name:        input.Name,
         Description: input.Description,
+        StartDate:   input.StartDate,
+        EndDate:     input.EndDate,
+        Location:    input.Location,
         UserID:      currentUser.ID,
-    }
-    if err := meetup.Validate(); err != nil {
-        return nil, err
     }
 
     return m.MeetupsRepo.Create(meetup)
