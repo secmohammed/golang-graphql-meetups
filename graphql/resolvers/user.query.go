@@ -23,6 +23,10 @@ func (r *queryResolver) FilteredMeetupsForUser(ctx context.Context, filter *mode
     if err != nil {
         return nil, ErrUnauthenticated
     }
+    if err := filter.Validate(); err != nil {
+        return nil, err
+    }
+
     return r.MeetupsRepo.GetFilteredMeetupsBasedOnUser(currentUser.ID, filter, limit, offset)
 }
 

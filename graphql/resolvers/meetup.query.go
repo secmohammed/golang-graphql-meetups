@@ -15,6 +15,10 @@ func (r *Resolver) Meetup() graphql.MeetupResolver {
 
 func (r *queryResolver) Meetups(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error) {
     //TODO: validate first.
+    if err := filter.Validate(); err != nil {
+        return nil, err
+    }
+
     return r.MeetupsRepo.GetMeetups(filter, limit, offset)
 }
 func (r *queryResolver) Meetup(ctx context.Context, id string) (*models.Meetup, error) {
