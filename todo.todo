@@ -4,7 +4,6 @@
  ✔ Meetup/User needs to upload photo. @done (20-03-21 09:26)
  ✔ Meetup needs categories @done (20-03-19 08:09)
  ✔ Meetup need to be filtered by category. @done (20-03-20 06:39)
- ≡ Add Authorization to users M:M.
  ✔ Meetup needs Time (Day, from-to hours)  and location. @done (20-03-21 05:41)
  ✔ Modify comments to contain replies as well. @done (20-03-20 05:53)
  ✔ Add guest middleware for guest queries/mutations. @done (20-03-20 06:21)

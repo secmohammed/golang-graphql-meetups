@@ -8,6 +8,40 @@ import (
     "github.com/secmohammed/meetups/models"
 )
 
+func (c *mutationResolver) CreateInterest(ctx context.Context, categoryID string) (bool, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return false, ErrUnauthenticated
+    }
+    _, err = c.CategoriesRepo.GetByID(categoryID)
+    if err != nil {
+        return false, errors.New("Couldn't find this category to be an interest")
+    }
+
+    interest := &models.CategoryUser{
+        CategoryID: categoryID,
+        UserID:     currentUser.ID,
+    }
+    return c.CategoriesRepo.CreateInterest(interest)
+}
+func (c *mutationResolver) DeleteInterest(ctx context.Context, categoryID string) (bool, error) {
+    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return false, ErrUnauthenticated
+    }
+    _, err = c.CategoriesRepo.GetByID(categoryID)
+    if err != nil {
+        return false, errors.New("Couldn't find this category to be an interest")
+    }
+
+    interest := &models.CategoryUser{
+        CategoryID: categoryID,
+        UserID:     currentUser.ID,
+    }
+    return c.CategoriesRepo.DeleteInterest(interest)
+
+}
+
 func (c *mutationResolver) CreateCategory(ctx context.Context, input models.CreateCategoryInput) (*models.Category, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {

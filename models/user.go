@@ -29,8 +29,10 @@ type User struct {
 
 // CategoryUser struct type
 type CategoryUser struct {
-    CategoryID string
-    UserID     string
+    tableName struct{} `sql:"category_user"`
+
+    CategoryID string `json:"category_id"`
+    UserID     string `json:"user_id"`
 }
 
 //RegisterInput is used to validate the user against passed inputs while registration.

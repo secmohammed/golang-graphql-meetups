@@ -19,6 +19,7 @@ type User {
   email: String!
   first_name: String!
   last_name: String!
+  avatar: String!
   meetups: [Meetup!]!
   interests: [Category!]!
   comments: [Comment!]!
@@ -124,6 +125,9 @@ type Mutation {
   createAttendance(input: CreateAttendanceInput!): Attendee!
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
   deleteAttendance(id: ID!): Boolean!
+
+  createInterest(category_id: ID!): Boolean!
+  deleteInterest(category_id: ID!): Boolean!
 
   createComment(input: CreateCommentInput!): Comment!
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!

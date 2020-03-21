@@ -94,10 +94,12 @@ type ComplexityRoot struct {
 		CreateAttendance func(childComplexity int, input models.CreateAttendanceInput) int
 		CreateCategory   func(childComplexity int, input models.CreateCategoryInput) int
 		CreateComment    func(childComplexity int, input models.CreateCommentInput) int
+		CreateInterest   func(childComplexity int, categoryID string) int
 		CreateMeetup     func(childComplexity int, input models.CreateMeetupInput) int
 		DeleteAttendance func(childComplexity int, id string) int
 		DeleteCategory   func(childComplexity int, name string) int
 		DeleteComment    func(childComplexity int, id string) int
+		DeleteInterest   func(childComplexity int, categoryID string) int
 		DeleteMeetup     func(childComplexity int, id string) int
 		Login            func(childComplexity int, input *models.LoginInput) int
 		Register         func(childComplexity int, input *models.RegisterInput) int
@@ -119,6 +121,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Avatar    func(childComplexity int) int
 		Comments  func(childComplexity int) int
 		Email     func(childComplexity int) int
 		FirstName func(childComplexity int) int
@@ -152,6 +155,8 @@ type MutationResolver interface {
 	CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error)
 	UpdateAttendance(ctx context.Context, id string, status models.AttendanceStatus) (*models.Attendee, error)
 	DeleteAttendance(ctx context.Context, id string) (bool, error)
+	CreateInterest(ctx context.Context, categoryID string) (bool, error)
+	DeleteInterest(ctx context.Context, categoryID string) (bool, error)
 	CreateComment(ctx context.Context, input models.CreateCommentInput) (*models.Comment, error)
 	UpdateComment(ctx context.Context, id string, input models.UpdateCommentInput) (*models.Comment, error)
 	DeleteComment(ctx context.Context, id string) (bool, error)
@@ -392,6 +397,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateComment(childComplexity, args["input"].(models.CreateCommentInput)), true
 
+	case "Mutation.createInterest":
+		if e.complexity.Mutation.CreateInterest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createInterest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateInterest(childComplexity, args["category_id"].(string)), true
+
 	case "Mutation.createMeetup":
 		if e.complexity.Mutation.CreateMeetup == nil {
 			break
@@ -439,6 +456,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteComment(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteInterest":
+		if e.complexity.Mutation.DeleteInterest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteInterest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteInterest(childComplexity, args["category_id"].(string)), true
 
 	case "Mutation.deleteMeetup":
 		if e.complexity.Mutation.DeleteMeetup == nil {
@@ -615,6 +644,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
 
+	case "User.avatar":
+		if e.complexity.User.Avatar == nil {
+			break
+		}
+
+		return e.complexity.User.Avatar(childComplexity), true
+
 	case "User.comments":
 		if e.complexity.User.Comments == nil {
 			break
@@ -756,6 +792,7 @@ type User {
   email: String!
   first_name: String!
   last_name: String!
+  avatar: String!
   meetups: [Meetup!]!
   interests: [Category!]!
   comments: [Comment!]!
@@ -862,6 +899,9 @@ type Mutation {
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
   deleteAttendance(id: ID!): Boolean!
 
+  createInterest(category_id: ID!): Boolean!
+  deleteInterest(category_id: ID!): Boolean!
+
   createComment(input: CreateCommentInput!): Comment!
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!
   deleteComment(id: ID!): Boolean!
@@ -927,6 +967,20 @@ func (ec *executionContext) field_Mutation_createComment_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createInterest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["category_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["category_id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createMeetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -980,6 +1034,20 @@ func (ec *executionContext) field_Mutation_deleteComment_args(ctx context.Contex
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteInterest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["category_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["category_id"] = arg0
 	return args, nil
 }
 
@@ -2206,6 +2274,88 @@ func (ec *executionContext) _Mutation_deleteAttendance(ctx context.Context, fiel
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createInterest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createInterest_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateInterest(rctx, args["category_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteInterest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteInterest_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteInterest(rctx, args["category_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3201,6 +3351,40 @@ func (ec *executionContext) _User_last_name(ctx context.Context, field graphql.C
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.LastName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_avatar(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Avatar, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5031,6 +5215,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createInterest":
+			out.Values[i] = ec._Mutation_createInterest(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteInterest":
+			out.Values[i] = ec._Mutation_deleteInterest(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createComment":
 			out.Values[i] = ec._Mutation_createComment(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5272,6 +5466,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "last_name":
 			out.Values[i] = ec._User_last_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "avatar":
+			out.Values[i] = ec._User_avatar(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
