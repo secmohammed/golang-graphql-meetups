@@ -32,10 +32,7 @@ func (r *queryResolver) FilteredMeetupsForUser(ctx context.Context, filter *mode
 }
 
 func (r *queryResolver) AuthenticatedUser(ctx context.Context) (*models.User, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, errors.ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     return r.UsersRepo.GetByID(currentUser.ID)
 }
 
