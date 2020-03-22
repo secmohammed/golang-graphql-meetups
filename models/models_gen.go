@@ -2,7 +2,12 @@
 
 package models
 
-import "time"
+import (
+	"fmt"
+	"io"
+	"strconv"
+	"time"
+)
 
 type Auth struct {
 	AuthToken *AuthToken `json:"authToken"`
@@ -12,4 +17,44 @@ type Auth struct {
 type AuthToken struct {
 	AccessToken string    `json:"accessToken"`
 	ExpiredAt   time.Time `json:"expiredAt"`
+}
+type Authentication string
+
+const (
+	AuthenticationGuest         Authentication = "GUEST"
+	AuthenticationAuthenticated Authentication = "AUTHENTICATED"
+)
+
+var AllAuthentication = []Authentication{
+	AuthenticationGuest,
+	AuthenticationAuthenticated,
+}
+
+func (e Authentication) IsValid() bool {
+	switch e {
+	case AuthenticationGuest, AuthenticationAuthenticated:
+		return true
+	}
+	return false
+}
+
+func (e Authentication) String() string {
+	return string(e)
+}
+
+func (e *Authentication) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Authentication(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Authentication", str)
+	}
+	return nil
+}
+
+func (e Authentication) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

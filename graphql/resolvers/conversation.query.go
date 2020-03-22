@@ -30,10 +30,7 @@ func (r *Resolver) Subscription() graphql.SubscriptionResolver {
     return &subscriptionResolver{r}
 }
 func (r *subscriptionResolver) MessageAdded(ctx context.Context, roomName string) (<-chan *models.Conversation, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
 
     r.mu.Lock()
     room := r.Rooms[roomName]

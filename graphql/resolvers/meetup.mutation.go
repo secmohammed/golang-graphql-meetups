@@ -2,30 +2,22 @@ package resolvers
 
 import (
     "context"
-    "errors"
     "fmt"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
-)
-
-var (
-    // ErrUnauthenticated is used to indicate that user is unauthenticated.
-    ErrUnauthenticated = errors.New("Unauthorized Attempt")
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return false, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
 
     meetup, err := m.MeetupsRepo.GetByID(id)
     if err != nil || meetup == nil {
-        return false, errors.New("meetup doesn't exist")
+        return false, errors.ErrRecordNotFound
     }
     if meetup.UserID != currentUser.ID {
-        return false, errors.New("Unauthorized attempt")
+        return false, errors.ErrUnauthenticated
     }
 
     err = m.MeetupsRepo.Delete(meetup)
@@ -35,19 +27,16 @@ func (m *mutationResolver) DeleteMeetup(ctx context.Context, id string) (bool, e
     return true, nil
 }
 func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetupInput) (*models.Meetup, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
 
     meetup, err := m.MeetupsRepo.GetByID(id)
 
     if err != nil || meetup == nil {
-        return nil, errors.New("meetup doesn't exist")
+        return nil, errors.ErrRecordNotFound
     }
 
     if meetup.UserID != currentUser.ID {
-        return nil, errors.New("Unauthorized attempt")
+        return nil, errors.ErrUnauthenticated
     }
     if err := input.Validate(); err != nil {
         return nil, err
@@ -62,15 +51,12 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input mo
     }
     meetup, err = m.MeetupsRepo.Update(meetup)
     if err != nil {
-        return nil, fmt.Errorf("error while updating meetup: %v", err)
+        return nil, errors.ErrInternalError
     }
     return meetup, nil
 }
 func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.CreateMeetupInput) (*models.Meetup, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     if err := input.Validate(); err != nil {
         return nil, err
     }

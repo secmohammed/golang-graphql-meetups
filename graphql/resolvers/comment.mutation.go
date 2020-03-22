@@ -2,22 +2,19 @@ package resolvers
 
 import (
     "context"
-    "errors"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 type commentResolver struct{ *Resolver }
 
 func (c *mutationResolver) CreateComment(ctx context.Context, input models.CreateCommentInput) (*models.Comment, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
 
     if _, err := c.MeetupsRepo.GetByID(input.MeetupID); err != nil {
-        return nil, errors.New("meetup doens't exist")
+        return nil, errors.ErrRecordNotFound
     }
 
     if err := input.Validate(); err != nil {
@@ -32,7 +29,7 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
     if input.ParentID != "" {
         _, err := c.CommentsRepo.GetByID(input.ParentID)
         if err != nil {
-            return nil, errors.New("Couldn't find this comment")
+            return nil, errors.ErrRecordNotFound
         }
         comment.ParentID = input.ParentID
 
@@ -42,16 +39,14 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
 
 }
 func (c *mutationResolver) UpdateComment(ctx context.Context, id string, input models.UpdateCommentInput) (*models.Comment, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
     comment, err := c.CommentsRepo.GetByID(id)
     if err != nil {
-        return nil, errors.New("Couldn't find this comment")
+        return nil, errors.ErrRecordNotFound
     }
     if comment.UserID != currentUser.ID {
-        return nil, errors.New("Unauthorized Attempt")
+        return nil, errors.ErrUnauthenticated
     }
     if err := input.Validate(); err != nil {
         return nil, err
@@ -59,7 +54,7 @@ func (c *mutationResolver) UpdateComment(ctx context.Context, id string, input m
     if input.ParentID != "" {
         _, err := c.CommentsRepo.GetByID(input.ParentID)
         if err != nil {
-            return nil, errors.New("Couldn't find this comment")
+            return nil, errors.ErrRecordNotFound
         }
         comment.ParentID = input.ParentID
 
@@ -71,16 +66,14 @@ func (c *mutationResolver) UpdateComment(ctx context.Context, id string, input m
 
 }
 func (c *mutationResolver) DeleteComment(ctx context.Context, id string) (bool, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return false, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
     comment, err := c.CommentsRepo.GetByID(id)
     if err != nil {
-        return false, errors.New("Couldn't find this comment")
+        return false, errors.ErrRecordNotFound
     }
     if comment.UserID != currentUser.ID {
-        return false, errors.New("Unauthorized Attempt")
+        return false, errors.ErrUnauthenticated
     }
     return true, c.CommentsRepo.Delete(comment)
 }

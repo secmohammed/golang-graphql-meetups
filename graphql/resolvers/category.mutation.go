@@ -2,20 +2,18 @@ package resolvers
 
 import (
     "context"
-    "errors"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 func (c *mutationResolver) CreateInterest(ctx context.Context, categoryID string) (bool, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
+    _, err := c.CategoriesRepo.GetByID(categoryID)
     if err != nil {
-        return false, ErrUnauthenticated
-    }
-    _, err = c.CategoriesRepo.GetByID(categoryID)
-    if err != nil {
-        return false, errors.New("Couldn't find this category to be an interest")
+        return false, errors.ErrRecordNotFound
     }
 
     interest := &models.CategoryUser{
@@ -25,13 +23,11 @@ func (c *mutationResolver) CreateInterest(ctx context.Context, categoryID string
     return c.CategoriesRepo.CreateInterest(interest)
 }
 func (c *mutationResolver) DeleteInterest(ctx context.Context, categoryID string) (bool, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
+    _, err := c.CategoriesRepo.GetByID(categoryID)
     if err != nil {
-        return false, ErrUnauthenticated
-    }
-    _, err = c.CategoriesRepo.GetByID(categoryID)
-    if err != nil {
-        return false, errors.New("Couldn't find this category to be an interest")
+        return false, errors.ErrRecordNotFound
     }
 
     interest := &models.CategoryUser{
@@ -45,7 +41,7 @@ func (c *mutationResolver) DeleteInterest(ctx context.Context, categoryID string
 func (c *mutationResolver) CreateCategory(ctx context.Context, input models.CreateCategoryInput) (*models.Category, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
-        return nil, ErrUnauthenticated
+        return nil, errors.ErrUnauthenticated
     }
     if err := input.Validate(); err != nil {
         return nil, err
@@ -60,15 +56,15 @@ func (c *mutationResolver) CreateCategory(ctx context.Context, input models.Crea
 func (c *mutationResolver) UpdateCategory(ctx context.Context, name string, input *models.CreateCategoryInput) (*models.Category, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
-        return nil, ErrUnauthenticated
+        return nil, errors.ErrUnauthenticated
     }
 
     category, err := c.CategoriesRepo.GetByName(name)
     if err != nil {
-        return nil, errors.New("Couldn't find this category to update")
+        return nil, errors.ErrRecordNotFound
     }
     if category.UserID != currentUser.ID {
-        return nil, errors.New("Unauthorized attempt")
+        return nil, errors.ErrUnauthenticated
     }
     if err := input.Validate(); err != nil {
         return nil, err
@@ -79,15 +75,15 @@ func (c *mutationResolver) UpdateCategory(ctx context.Context, name string, inpu
 func (c *mutationResolver) DeleteCategory(ctx context.Context, name string) (bool, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
-        return false, ErrUnauthenticated
+        return false, errors.ErrUnauthenticated
     }
 
     category, err := c.CategoriesRepo.GetByName(name)
     if err != nil {
-        return false, errors.New("Couldn't find this category to update")
+        return false, errors.ErrRecordNotFound
     }
     if category.UserID != currentUser.ID {
-        return false, errors.New("Unauthorized attempt")
+        return false, errors.ErrUnauthenticated
     }
 
     return true, c.CategoriesRepo.Delete(category)

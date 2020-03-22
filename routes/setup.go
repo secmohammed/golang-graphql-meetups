@@ -1,12 +1,14 @@
 package routes
 
 import (
+    "context"
     "fmt"
     "log"
     "os"
     "strconv"
     "time"
 
+    packageGraphQL "github.com/99designs/gqlgen/graphql"
     "github.com/99designs/gqlgen/handler"
     "github.com/go-chi/chi"
     "github.com/go-chi/chi/middleware"
@@ -16,8 +18,10 @@ import (
     "github.com/secmohammed/meetups/graphql/loaders"
     "github.com/secmohammed/meetups/graphql/resolvers"
     "github.com/secmohammed/meetups/middlewares"
+    "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/postgres"
     "github.com/secmohammed/meetups/utils"
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 var (
@@ -45,6 +49,18 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         AttendeesRepo:     postgres.AttendeesRepo{DB: DB},
         ConversationsRepo: postgres.ConversationsRepo{DB: DB},
     }}
+    c.Directives.Authentication = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, auth models.Authentication) (res interface{}, err error) {
+        _, err = middlewares.GetCurrentUserFromContext(ctx)
+        if err != nil && auth == "AUTHENTICATED" {
+            return nil, errors.ErrUnauthenticated
+        }
+        if err == nil && auth == "GUEST" {
+            return nil, errors.ErrAuthenticated
+        }
+
+        // or let it pass through
+        return next(ctx)
+    }
     router.Use(middlewares.AuthMiddleware(userRepo))
 
     queryHandler := handler.GraphQL(

@@ -4,6 +4,13 @@ enum AttendanceStatus {
   going
   interested
 }
+directive @authentication(auth: Authentication!) on FIELD_DEFINITION
+
+enum Authentication {
+  GUEST
+  AUTHENTICATED
+}
+
 input CreateConversationInput {
   user_ids: [ID!]!
   message: String!
@@ -141,33 +148,47 @@ type Query {
 
 type Mutation {
   createAttendance(input: CreateAttendanceInput!): Attendee!
+    @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
-  deleteAttendance(id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteAttendance(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
   createInterest(category_id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
   deleteInterest(category_id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
 
   createComment(input: CreateCommentInput!): Comment!
+    @authentication(auth: AUTHENTICATED)
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!
-  deleteComment(id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteComment(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
   createCategory(input: CreateCategoryInput!): Category!
+    @authentication(auth: AUTHENTICATED)
   updateCategory(name: String!, input: CreateCategoryInput): Category!
-  deleteCategory(name: String!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteCategory(name: String!): Boolean! @authentication(auth: AUTHENTICATED)
 
-  register(input: RegisterInput): Auth!
-  login(input: LoginInput): Auth!
+  register(input: RegisterInput): Auth! @authentication(auth: GUEST)
+  login(input: LoginInput): Auth! @authentication(auth: GUEST)
 
   createMeetup(input: CreateMeetupInput!): Meetup!
+    @authentication(auth: AUTHENTICATED)
   updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
-  deleteMeetup(id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteMeetup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
-  createMessage(conversation_id: ID!, input: CreateMessageInput!): Conversation!
+  createMessage(
+    conversation_id: ID!
+    input: CreateMessageInput!
+  ): Conversation! @authentication(auth: AUTHENTICATED)
   createConversation(input: CreateConversationInput!): Conversation!
+    @authentication(auth: AUTHENTICATED)
 }
 input CreateMessageInput {
   message: String!
 }
 type Subscription {
-  messageAdded(id: ID!): Conversation!
+  messageAdded(id: ID!): Conversation! @authentication(auth: AUTHENTICATED)
 }

@@ -9,10 +9,8 @@ import (
 )
 
 func (a *mutationResolver) CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
     if _, err := a.MeetupsRepo.GetByID(input.MeetupID); err != nil {
         return nil, errors.New("meetup doens't exist")
     }
@@ -24,10 +22,8 @@ func (a *mutationResolver) CreateAttendance(ctx context.Context, input models.Cr
     return a.AttendeesRepo.Create(attendee)
 }
 func (a *mutationResolver) DeleteAttendance(ctx context.Context, id string) (bool, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return false, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
     attendee, err := a.AttendeesRepo.GetByID(id)
     if err != nil {
         return false, errors.New("Couldn't find this attendee to update")
@@ -39,10 +35,8 @@ func (a *mutationResolver) DeleteAttendance(ctx context.Context, id string) (boo
 
 }
 func (a *mutationResolver) UpdateAttendance(ctx context.Context, id string, status models.AttendanceStatus) (*models.Attendee, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+
     attendee, err := a.AttendeesRepo.GetByID(id)
     if err != nil {
         return nil, errors.New("Couldn't find this attendee to update")

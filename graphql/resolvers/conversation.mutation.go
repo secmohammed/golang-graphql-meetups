@@ -2,18 +2,15 @@ package resolvers
 
 import (
     "context"
-    "errors"
     "time"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 func (c *mutationResolver) CreateConversation(ctx context.Context, input models.CreateConversationInput) (*models.Conversation, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     if err := input.Validate(); err != nil {
         return nil, err
     }
@@ -48,14 +45,14 @@ func (c *mutationResolver) CreateConversation(ctx context.Context, input models.
 func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID string, input models.CreateMessageInput) (*models.Conversation, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
-        return nil, ErrUnauthenticated
+        return nil, errors.ErrUnauthenticated
     }
     if err := input.Validate(); err != nil {
         return nil, err
     }
     _, err = c.ConversationsRepo.GetByID(conversationID)
     if err != nil {
-        return nil, errors.New("Couldn't find this conversation")
+        return nil, errors.ErrRecordNotFound
     }
     newConversation := &models.Conversation{
         ParentID:  conversationID,

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"sync"
@@ -48,6 +49,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	Authentication func(ctx context.Context, obj interface{}, next graphql.Resolver, auth models.Authentication) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -925,6 +927,13 @@ enum AttendanceStatus {
   going
   interested
 }
+directive @authentication(auth: Authentication!) on FIELD_DEFINITION
+
+enum Authentication {
+  GUEST
+  AUTHENTICATED
+}
+
 input CreateConversationInput {
   user_ids: [ID!]!
   message: String!
@@ -1062,35 +1071,49 @@ type Query {
 
 type Mutation {
   createAttendance(input: CreateAttendanceInput!): Attendee!
+    @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
-  deleteAttendance(id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteAttendance(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
   createInterest(category_id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
   deleteInterest(category_id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
 
   createComment(input: CreateCommentInput!): Comment!
+    @authentication(auth: AUTHENTICATED)
   updateComment(id: ID!, input: UpdateCommentInput!): Comment!
-  deleteComment(id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteComment(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
   createCategory(input: CreateCategoryInput!): Category!
+    @authentication(auth: AUTHENTICATED)
   updateCategory(name: String!, input: CreateCategoryInput): Category!
-  deleteCategory(name: String!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteCategory(name: String!): Boolean! @authentication(auth: AUTHENTICATED)
 
-  register(input: RegisterInput): Auth!
+  register(input: RegisterInput): Auth! @authentication(auth: GUEST)
   login(input: LoginInput): Auth!
 
   createMeetup(input: CreateMeetupInput!): Meetup!
+    @authentication(auth: AUTHENTICATED)
   updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
-  deleteMeetup(id: ID!): Boolean!
+    @authentication(auth: AUTHENTICATED)
+  deleteMeetup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
-  createMessage(conversation_id: ID!, input: CreateMessageInput!): Conversation!
+  createMessage(
+    conversation_id: ID!
+    input: CreateMessageInput!
+  ): Conversation! @authentication(auth: AUTHENTICATED)
   createConversation(input: CreateConversationInput!): Conversation!
+    @authentication(auth: AUTHENTICATED)
 }
 input CreateMessageInput {
   message: String!
 }
 type Subscription {
-  messageAdded(id: ID!): Conversation!
+  messageAdded(id: ID!): Conversation! @authentication(auth: AUTHENTICATED)
 }
 `, BuiltIn: false},
 }
@@ -1099,6 +1122,20 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) dir_authentication_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.Authentication
+	if tmp, ok := rawArgs["auth"]; ok {
+		arg0, err = ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["auth"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createAttendance_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -2651,8 +2688,32 @@ func (ec *executionContext) _Mutation_createAttendance(ctx context.Context, fiel
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAttendance(rctx, args["input"].(models.CreateAttendanceInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateAttendance(rctx, args["input"].(models.CreateAttendanceInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Attendee); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Attendee`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2692,8 +2753,32 @@ func (ec *executionContext) _Mutation_updateAttendance(ctx context.Context, fiel
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateAttendance(rctx, args["id"].(string), args["status"].(models.AttendanceStatus))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateAttendance(rctx, args["id"].(string), args["status"].(models.AttendanceStatus))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Attendee); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Attendee`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2733,8 +2818,32 @@ func (ec *executionContext) _Mutation_deleteAttendance(ctx context.Context, fiel
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteAttendance(rctx, args["id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteAttendance(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2774,8 +2883,32 @@ func (ec *executionContext) _Mutation_createInterest(ctx context.Context, field 
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateInterest(rctx, args["category_id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateInterest(rctx, args["category_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2815,8 +2948,32 @@ func (ec *executionContext) _Mutation_deleteInterest(ctx context.Context, field 
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteInterest(rctx, args["category_id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteInterest(rctx, args["category_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2856,8 +3013,32 @@ func (ec *executionContext) _Mutation_createComment(ctx context.Context, field g
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateComment(rctx, args["input"].(models.CreateCommentInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateComment(rctx, args["input"].(models.CreateCommentInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Comment); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Comment`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2897,8 +3078,32 @@ func (ec *executionContext) _Mutation_updateComment(ctx context.Context, field g
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateComment(rctx, args["id"].(string), args["input"].(models.UpdateCommentInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateComment(rctx, args["id"].(string), args["input"].(models.UpdateCommentInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Comment); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Comment`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2938,8 +3143,32 @@ func (ec *executionContext) _Mutation_deleteComment(ctx context.Context, field g
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteComment(rctx, args["id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteComment(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2979,8 +3208,32 @@ func (ec *executionContext) _Mutation_createCategory(ctx context.Context, field 
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateCategory(rctx, args["input"].(models.CreateCategoryInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateCategory(rctx, args["input"].(models.CreateCategoryInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Category); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Category`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3020,8 +3273,32 @@ func (ec *executionContext) _Mutation_updateCategory(ctx context.Context, field 
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateCategory(rctx, args["name"].(string), args["input"].(*models.CreateCategoryInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateCategory(rctx, args["name"].(string), args["input"].(*models.CreateCategoryInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Category); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Category`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3061,8 +3338,32 @@ func (ec *executionContext) _Mutation_deleteCategory(ctx context.Context, field 
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteCategory(rctx, args["name"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteCategory(rctx, args["name"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3102,8 +3403,32 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Register(rctx, args["input"].(*models.RegisterInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().Register(rctx, args["input"].(*models.RegisterInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "GUEST")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Auth); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Auth`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3184,8 +3509,32 @@ func (ec *executionContext) _Mutation_createMeetup(ctx context.Context, field gr
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMeetup(rctx, args["input"].(models.CreateMeetupInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateMeetup(rctx, args["input"].(models.CreateMeetupInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Meetup); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Meetup`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3225,8 +3574,32 @@ func (ec *executionContext) _Mutation_updateMeetup(ctx context.Context, field gr
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMeetup(rctx, args["id"].(string), args["input"].(models.UpdateMeetupInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateMeetup(rctx, args["id"].(string), args["input"].(models.UpdateMeetupInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Meetup); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Meetup`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3266,8 +3639,32 @@ func (ec *executionContext) _Mutation_deleteMeetup(ctx context.Context, field gr
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteMeetup(rctx, args["id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteMeetup(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3307,8 +3704,32 @@ func (ec *executionContext) _Mutation_createMessage(ctx context.Context, field g
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMessage(rctx, args["conversation_id"].(string), args["input"].(models.CreateMessageInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateMessage(rctx, args["conversation_id"].(string), args["input"].(models.CreateMessageInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Conversation); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Conversation`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3348,8 +3769,32 @@ func (ec *executionContext) _Mutation_createConversation(ctx context.Context, fi
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateConversation(rctx, args["input"].(models.CreateConversationInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateConversation(rctx, args["input"].(models.CreateConversationInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Conversation); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Conversation`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3854,8 +4299,32 @@ func (ec *executionContext) _Subscription_messageAdded(ctx context.Context, fiel
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().MessageAdded(rctx, args["id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Subscription().MessageAdded(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(<-chan *models.Conversation); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/secmohammed/meetups/models.Conversation`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6700,6 +7169,15 @@ func (ec *executionContext) marshalNAuthToken2ᚖgithubᚗcomᚋsecmohammedᚋme
 		return graphql.Null
 	}
 	return ec._AuthToken(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx context.Context, v interface{}) (models.Authentication, error) {
+	var res models.Authentication
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx context.Context, sel ast.SelectionSet, v models.Authentication) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {

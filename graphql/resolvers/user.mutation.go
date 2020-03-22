@@ -2,42 +2,31 @@ package resolvers
 
 import (
     "context"
-    "errors"
+    coreErrors "errors"
     "log"
     "os"
 
-    "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/utils"
-)
-
-var (
-    //ErrBadCredentials is used to clarify that user has given invaild credentials.
-    ErrBadCredentials = errors.New("Invalid credentials")
-    //ErrAuthenticated is used to clarify that user is already authenticated.
-    ErrAuthenticated = errors.New("you are already authenticated")
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 func (m *mutationResolver) Login(ctx context.Context, input *models.LoginInput) (*models.Auth, error) {
-    if _, err := middlewares.GetCurrentUserFromContext(ctx); err == nil {
-        return nil, ErrAuthenticated
-    }
-
     if err := input.Validate(); err != nil {
         return nil, err
     }
 
     user, err := m.UsersRepo.GetByField("email", input.Email)
     if err != nil {
-        return nil, ErrBadCredentials
+        return nil, errors.ErrBadCredentials
     }
     err = user.ComparePassword(input.Password)
     if err != nil {
-        return nil, ErrBadCredentials
+        return nil, errors.ErrBadCredentials
     }
     token, err := user.GenerateToken()
     if err != nil {
-        return nil, errors.New("something went wrong")
+        return nil, errors.ErrInternalError
     }
     return &models.Auth{
         AuthToken: token,
@@ -49,21 +38,17 @@ func (m *mutationResolver) Login(ctx context.Context, input *models.LoginInput) 
 // Register is used to create a user by the passed attribtues.
 func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterInput) (*models.Auth, error) {
 
-    if _, err := middlewares.GetCurrentUserFromContext(ctx); err == nil {
-        return nil, ErrAuthenticated
-    }
-
     if err := input.Validate(); err != nil {
         return nil, err
     }
     _, err := m.UsersRepo.GetByField("email", input.Email)
     if err == nil {
-        return nil, errors.New("email already in used")
+        return nil, errors.ErrEmailIsntUnique
     }
 
     _, err = m.UsersRepo.GetByField("username", input.Username)
     if err == nil {
-        return nil, errors.New("username already in used")
+        return nil, errors.ErrUsernameIsntUnique
     }
     user := &models.User{
         Username:  input.Username,
@@ -75,7 +60,7 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
     if input.Avatar != nil {
         info, status := utils.UploadFile(input.Avatar, os.Getenv("AVATAR_STORAGE_PATH"))
         if !status {
-            return nil, errors.New(info)
+            return nil, coreErrors.New(info)
         }
         if status {
             user.Avatar = info
@@ -85,12 +70,12 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
 
     err = user.HashPassword(input.Password)
     if err != nil {
-        return nil, errors.New("something went wrong")
+        return nil, errors.ErrInternalError
     }
     transaction, err := m.UsersRepo.DB.Begin()
     if err != nil {
         log.Printf("error creating a transaction: %v", err)
-        return nil, errors.New("something went wrong")
+        return nil, errors.ErrInternalError
     }
     defer transaction.Rollback()
     if _, err := m.UsersRepo.CreateUser(transaction, user); err != nil {
@@ -106,7 +91,7 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
     token, err := user.GenerateToken()
     if err != nil {
         log.Printf("error while Commiting: %v", err)
-        return nil, errors.New("failed generating token")
+        return nil, errors.ErrCouldntGenerateJWTToken
     }
     return &models.Auth{
         AuthToken: token,
