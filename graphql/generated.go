@@ -1059,7 +1059,7 @@ type Query {
 
   meetup(id: ID!): Meetup!
 
-  authenticatedUser: User!
+  authenticatedUser: User! @authentication(auth: AUTHENTICATED)
   user(id: ID!): User!
 
   conversation(id: ID!): Conversation!
@@ -1094,7 +1094,7 @@ type Mutation {
   deleteCategory(name: String!): Boolean! @authentication(auth: AUTHENTICATED)
 
   register(input: RegisterInput): Auth! @authentication(auth: GUEST)
-  login(input: LoginInput): Auth!
+  login(input: LoginInput): Auth! @authentication(auth: GUEST)
 
   createMeetup(input: CreateMeetupInput!): Meetup!
     @authentication(auth: AUTHENTICATED)
@@ -3468,8 +3468,32 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Login(rctx, args["input"].(*models.LoginInput))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().Login(rctx, args["input"].(*models.LoginInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "GUEST")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Auth); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Auth`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3991,8 +4015,32 @@ func (ec *executionContext) _Query_authenticatedUser(ctx context.Context, field 
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().AuthenticatedUser(rctx)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().AuthenticatedUser(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)

@@ -136,7 +136,7 @@ type Query {
 
   meetup(id: ID!): Meetup!
 
-  authenticatedUser: User!
+  authenticatedUser: User! @authentication(auth: AUTHENTICATED)
   user(id: ID!): User!
 
   conversation(id: ID!): Conversation!
