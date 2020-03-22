@@ -3,8 +3,6 @@
 package resolvers
 
 import (
-    "sync"
-
     "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/postgres"
 )
@@ -17,8 +15,6 @@ type Resolver struct {
     CategoriesRepo    postgres.CategoriesRepo
     AttendeesRepo     postgres.AttendeesRepo
     ConversationsRepo postgres.ConversationsRepo
-    mu                sync.Mutex // nolint: structcheck
-    Rooms             map[string]*Chatroom
 }
 
 type mutationResolver struct{ *Resolver }

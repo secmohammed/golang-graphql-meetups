@@ -6,7 +6,6 @@ import (
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
-    "github.com/secmohammed/meetups/utils/errors"
 )
 
 func (c *mutationResolver) CreateConversation(ctx context.Context, input models.CreateConversationInput) (*models.Conversation, error) {
@@ -43,22 +42,26 @@ func (c *mutationResolver) CreateConversation(ctx context.Context, input models.
     return conversation, nil
 }
 func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID string, input models.CreateMessageInput) (*models.Conversation, error) {
-    currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
-    if err != nil {
-        return nil, errors.ErrUnauthenticated
-    }
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     if err := input.Validate(); err != nil {
         return nil, err
     }
-    _, err = c.ConversationsRepo.GetByID(conversationID)
-    if err != nil {
-        return nil, errors.ErrRecordNotFound
+    if _, err := c.ConversationsRepo.GetByID(conversationID); err != nil {
+        return nil, err
     }
     newConversation := &models.Conversation{
         ParentID:  conversationID,
         UserID:    currentUser.ID,
         Message:   input.Message,
-        LastReply: time.Now().String(),
+        LastReply: time.Now().Format(time.RFC3339),
     }
-    return c.ConversationsRepo.Create(newConversation)
+    conversation, err := c.ConversationsRepo.Create(newConversation)
+    if err != nil {
+        return nil, err
+    }
+    for _, observer := range conversationMessageAdded {
+        observer <- conversation
+    }
+
+    return conversation, nil
 }

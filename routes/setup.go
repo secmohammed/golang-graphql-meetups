@@ -4,6 +4,7 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
     "os"
     "strconv"
     "time"
@@ -13,6 +14,7 @@ import (
     "github.com/go-chi/chi"
     "github.com/go-chi/chi/middleware"
     "github.com/go-pg/pg"
+    "github.com/gorilla/websocket"
     "github.com/rs/cors"
     "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/graphql/loaders"
@@ -66,9 +68,14 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
     queryHandler := handler.GraphQL(
         graphql.NewExecutableSchema(c),
         handler.EnablePersistedQueryCache(cache),
-        handler.ComplexityLimit(10),
+        handler.ComplexityLimit(200),
+        handler.WebsocketUpgrader(
+            websocket.Upgrader{
+                CheckOrigin: func(r *http.Request) bool {
+                    return true
+                },
+            }),
     )
-
     router.Use(cors.New(cors.Options{
         AllowedOrigins:   []string{fmt.Sprintf("%s:%s", url, port)},
         Debug:            debug,

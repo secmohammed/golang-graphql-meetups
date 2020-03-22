@@ -41,6 +41,7 @@ type ResolverRoot interface {
 	Attendee() AttendeeResolver
 	Category() CategoryResolver
 	Comment() CommentResolver
+	Conversation() ConversationResolver
 	Meetup() MeetupResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -139,7 +140,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		MessageAdded func(childComplexity int, id string) int
+		MessageAdded func(childComplexity int) int
 	}
 
 	User struct {
@@ -166,6 +167,9 @@ type CategoryResolver interface {
 type CommentResolver interface {
 	User(ctx context.Context, obj *models.Comment) (*models.User, error)
 	Replies(ctx context.Context, obj *models.Comment) ([]*models.Comment, error)
+}
+type ConversationResolver interface {
+	Conversations(ctx context.Context, obj *models.Conversation) ([]*models.Conversation, error)
 }
 type MeetupResolver interface {
 	User(ctx context.Context, obj *models.Meetup) (*models.User, error)
@@ -206,7 +210,7 @@ type QueryResolver interface {
 	Category(ctx context.Context, name string) (*models.Category, error)
 }
 type SubscriptionResolver interface {
-	MessageAdded(ctx context.Context, id string) (<-chan *models.Conversation, error)
+	MessageAdded(ctx context.Context) (<-chan *models.Conversation, error)
 }
 type UserResolver interface {
 	Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error)
@@ -770,12 +774,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Subscription_messageAdded_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Subscription.MessageAdded(childComplexity, args["id"].(string)), true
+		return e.complexity.Subscription.MessageAdded(childComplexity), true
 
 	case "User.avatar":
 		if e.complexity.User.Avatar == nil {
@@ -1113,7 +1112,7 @@ input CreateMessageInput {
   message: String!
 }
 type Subscription {
-  messageAdded(id: ID!): Conversation! @authentication(auth: AUTHENTICATED)
+  messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
 }
 `, BuiltIn: false},
 }
@@ -1582,20 +1581,6 @@ func (ec *executionContext) field_Query_meetups_args(ctx context.Context, rawArg
 }
 
 func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Subscription_messageAdded_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -2404,13 +2389,13 @@ func (ec *executionContext) _Conversation_conversations(ctx context.Context, fie
 		Object:   "Conversation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Conversations, nil
+		return ec.resolvers.Conversation().Conversations(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4339,17 +4324,10 @@ func (ec *executionContext) _Subscription_messageAdded(ctx context.Context, fiel
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Subscription_messageAdded_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return nil
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Subscription().MessageAdded(rctx, args["id"].(string))
+			return ec.resolvers.Subscription().MessageAdded(rctx)
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
@@ -6350,38 +6328,47 @@ func (ec *executionContext) _Conversation(ctx context.Context, sel ast.Selection
 		case "id":
 			out.Values[i] = ec._Conversation_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "message":
 			out.Values[i] = ec._Conversation_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "user":
 			out.Values[i] = ec._Conversation_user(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "last_reply":
 			out.Values[i] = ec._Conversation_last_reply(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "created_at":
 			out.Values[i] = ec._Conversation_created_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "updated_at":
 			out.Values[i] = ec._Conversation_updated_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "conversations":
-			out.Values[i] = ec._Conversation_conversations(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Conversation_conversations(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

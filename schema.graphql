@@ -190,5 +190,5 @@ input CreateMessageInput {
   message: String!
 }
 type Subscription {
-  messageAdded(id: ID!): Conversation! @authentication(auth: AUTHENTICATED)
+  messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
 }

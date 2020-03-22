@@ -10,6 +10,11 @@ exec:
 model:
   filename: models/models_gen.go
 models:
+  Conversation:
+    model: github.com/secmohammed/meetups/models.Conversation
+    fields:
+      conversations:
+        resolver: true
   User:
     model: github.com/secmohammed/meetups/models.User
     fields:
