@@ -32,19 +32,21 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
     userRepo := postgres.UsersRepo{DB: DB}
 
     router := chi.NewRouter()
-    c := graphql.Config{Resolvers: &resolvers.Resolver{
-        MeetupsRepo:    postgres.MeetupsRepo{DB: DB},
-        UsersRepo:      userRepo,
-        CommentsRepo:   postgres.CommentsRepo{DB: DB},
-        CategoriesRepo: postgres.CategoriesRepo{DB: DB},
-        AttendeesRepo:  postgres.AttendeesRepo{DB: DB},
-    }}
-    router.Use(middlewares.AuthMiddleware(userRepo))
-
     cache, err := utils.NewCache(os.Getenv("REDIS_ADDRESS"), time.Duration(cacheTTL)*time.Hour)
     if err != nil {
         log.Fatalf("Cannot create APQ redis cache: %v", err)
     }
+
+    c := graphql.Config{Resolvers: &resolvers.Resolver{
+        MeetupsRepo:       postgres.MeetupsRepo{DB: DB},
+        UsersRepo:         userRepo,
+        CommentsRepo:      postgres.CommentsRepo{DB: DB},
+        CategoriesRepo:    postgres.CategoriesRepo{DB: DB},
+        AttendeesRepo:     postgres.AttendeesRepo{DB: DB},
+        ConversationsRepo: postgres.ConversationsRepo{DB: DB},
+    }}
+    router.Use(middlewares.AuthMiddleware(userRepo))
+
     queryHandler := handler.GraphQL(
         graphql.NewExecutableSchema(c),
         handler.EnablePersistedQueryCache(cache),

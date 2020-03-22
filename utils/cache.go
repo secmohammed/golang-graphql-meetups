@@ -29,6 +29,10 @@ func NewCache(redisAddress string, ttl time.Duration) (*Cache, error) {
         ttl:    ttl,
     }, nil
 }
+func (c *Cache) SAdd(key, value string) error {
+    return c.client.SAdd(key, value).Err()
+}
+
 func (c *Cache) Add(ctx context.Context, hash, query string) {
     c.client.Set(apqPrefix+hash, query, c.ttl)
 }

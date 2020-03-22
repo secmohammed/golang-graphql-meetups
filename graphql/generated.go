@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -42,6 +43,7 @@ type ResolverRoot interface {
 	Meetup() MeetupResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 	User() UserResolver
 }
 
@@ -80,6 +82,16 @@ type ComplexityRoot struct {
 		User    func(childComplexity int) int
 	}
 
+	Conversation struct {
+		Conversations func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		LastReply     func(childComplexity int) int
+		Message       func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+		User          func(childComplexity int) int
+	}
+
 	Meetup struct {
 		Attendees   func(childComplexity int) int
 		Categories  func(childComplexity int) int
@@ -91,22 +103,24 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateAttendance func(childComplexity int, input models.CreateAttendanceInput) int
-		CreateCategory   func(childComplexity int, input models.CreateCategoryInput) int
-		CreateComment    func(childComplexity int, input models.CreateCommentInput) int
-		CreateInterest   func(childComplexity int, categoryID string) int
-		CreateMeetup     func(childComplexity int, input models.CreateMeetupInput) int
-		DeleteAttendance func(childComplexity int, id string) int
-		DeleteCategory   func(childComplexity int, name string) int
-		DeleteComment    func(childComplexity int, id string) int
-		DeleteInterest   func(childComplexity int, categoryID string) int
-		DeleteMeetup     func(childComplexity int, id string) int
-		Login            func(childComplexity int, input *models.LoginInput) int
-		Register         func(childComplexity int, input *models.RegisterInput) int
-		UpdateAttendance func(childComplexity int, id string, status models.AttendanceStatus) int
-		UpdateCategory   func(childComplexity int, name string, input *models.CreateCategoryInput) int
-		UpdateComment    func(childComplexity int, id string, input models.UpdateCommentInput) int
-		UpdateMeetup     func(childComplexity int, id string, input models.UpdateMeetupInput) int
+		CreateAttendance   func(childComplexity int, input models.CreateAttendanceInput) int
+		CreateCategory     func(childComplexity int, input models.CreateCategoryInput) int
+		CreateComment      func(childComplexity int, input models.CreateCommentInput) int
+		CreateConversation func(childComplexity int, input models.CreateConversationInput) int
+		CreateInterest     func(childComplexity int, categoryID string) int
+		CreateMeetup       func(childComplexity int, input models.CreateMeetupInput) int
+		CreateMessage      func(childComplexity int, conversationID string, input models.CreateMessageInput) int
+		DeleteAttendance   func(childComplexity int, id string) int
+		DeleteCategory     func(childComplexity int, name string) int
+		DeleteComment      func(childComplexity int, id string) int
+		DeleteInterest     func(childComplexity int, categoryID string) int
+		DeleteMeetup       func(childComplexity int, id string) int
+		Login              func(childComplexity int, input *models.LoginInput) int
+		Register           func(childComplexity int, input *models.RegisterInput) int
+		UpdateAttendance   func(childComplexity int, id string, status models.AttendanceStatus) int
+		UpdateCategory     func(childComplexity int, name string, input *models.CreateCategoryInput) int
+		UpdateComment      func(childComplexity int, id string, input models.UpdateCommentInput) int
+		UpdateMeetup       func(childComplexity int, id string, input models.UpdateMeetupInput) int
 	}
 
 	Query struct {
@@ -114,10 +128,16 @@ type ComplexityRoot struct {
 		Categories             func(childComplexity int, limit *int, offset *int) int
 		Category               func(childComplexity int, name string) int
 		Comments               func(childComplexity int, meetupID string) int
+		Conversation           func(childComplexity int, id string) int
+		Conversations          func(childComplexity int) int
 		FilteredMeetupsForUser func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
 		Meetup                 func(childComplexity int, id string) int
 		Meetups                func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
 		User                   func(childComplexity int, id string) int
+	}
+
+	Subscription struct {
+		MessageAdded func(childComplexity int, id string) int
 	}
 
 	User struct {
@@ -168,6 +188,8 @@ type MutationResolver interface {
 	CreateMeetup(ctx context.Context, input models.CreateMeetupInput) (*models.Meetup, error)
 	UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetupInput) (*models.Meetup, error)
 	DeleteMeetup(ctx context.Context, id string) (bool, error)
+	CreateMessage(ctx context.Context, conversationID string, input models.CreateMessageInput) (*models.Conversation, error)
+	CreateConversation(ctx context.Context, input models.CreateConversationInput) (*models.Conversation, error)
 }
 type QueryResolver interface {
 	Comments(ctx context.Context, meetupID string) ([]*models.Comment, error)
@@ -176,8 +198,13 @@ type QueryResolver interface {
 	Meetup(ctx context.Context, id string) (*models.Meetup, error)
 	AuthenticatedUser(ctx context.Context) (*models.User, error)
 	User(ctx context.Context, id string) (*models.User, error)
+	Conversation(ctx context.Context, id string) (*models.Conversation, error)
+	Conversations(ctx context.Context) ([]*models.Conversation, error)
 	Categories(ctx context.Context, limit *int, offset *int) ([]*models.Category, error)
 	Category(ctx context.Context, name string) (*models.Category, error)
+}
+type SubscriptionResolver interface {
+	MessageAdded(ctx context.Context, id string) (<-chan *models.Conversation, error)
 }
 type UserResolver interface {
 	Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error)
@@ -312,6 +339,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Comment.User(childComplexity), true
 
+	case "Conversation.conversations":
+		if e.complexity.Conversation.Conversations == nil {
+			break
+		}
+
+		return e.complexity.Conversation.Conversations(childComplexity), true
+
+	case "Conversation.created_at":
+		if e.complexity.Conversation.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Conversation.CreatedAt(childComplexity), true
+
+	case "Conversation.id":
+		if e.complexity.Conversation.ID == nil {
+			break
+		}
+
+		return e.complexity.Conversation.ID(childComplexity), true
+
+	case "Conversation.last_reply":
+		if e.complexity.Conversation.LastReply == nil {
+			break
+		}
+
+		return e.complexity.Conversation.LastReply(childComplexity), true
+
+	case "Conversation.message":
+		if e.complexity.Conversation.Message == nil {
+			break
+		}
+
+		return e.complexity.Conversation.Message(childComplexity), true
+
+	case "Conversation.updated_at":
+		if e.complexity.Conversation.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Conversation.UpdatedAt(childComplexity), true
+
+	case "Conversation.user":
+		if e.complexity.Conversation.User == nil {
+			break
+		}
+
+		return e.complexity.Conversation.User(childComplexity), true
+
 	case "Meetup.attendees":
 		if e.complexity.Meetup.Attendees == nil {
 			break
@@ -397,6 +473,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateComment(childComplexity, args["input"].(models.CreateCommentInput)), true
 
+	case "Mutation.createConversation":
+		if e.complexity.Mutation.CreateConversation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createConversation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateConversation(childComplexity, args["input"].(models.CreateConversationInput)), true
+
 	case "Mutation.createInterest":
 		if e.complexity.Mutation.CreateInterest == nil {
 			break
@@ -420,6 +508,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateMeetup(childComplexity, args["input"].(models.CreateMeetupInput)), true
+
+	case "Mutation.createMessage":
+		if e.complexity.Mutation.CreateMessage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createMessage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateMessage(childComplexity, args["conversation_id"].(string), args["input"].(models.CreateMessageInput)), true
 
 	case "Mutation.deleteAttendance":
 		if e.complexity.Mutation.DeleteAttendance == nil {
@@ -596,6 +696,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Comments(childComplexity, args["meetup_id"].(string)), true
 
+	case "Query.conversation":
+		if e.complexity.Query.Conversation == nil {
+			break
+		}
+
+		args, err := ec.field_Query_conversation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Conversation(childComplexity, args["id"].(string)), true
+
+	case "Query.conversations":
+		if e.complexity.Query.Conversations == nil {
+			break
+		}
+
+		return e.complexity.Query.Conversations(childComplexity), true
+
 	case "Query.filteredMeetupsForUser":
 		if e.complexity.Query.FilteredMeetupsForUser == nil {
 			break
@@ -643,6 +762,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
+
+	case "Subscription.messageAdded":
+		if e.complexity.Subscription.MessageAdded == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_messageAdded_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.MessageAdded(childComplexity, args["id"].(string)), true
 
 	case "User.avatar":
 		if e.complexity.User.Avatar == nil {
@@ -745,6 +876,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next()
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -777,7 +925,19 @@ enum AttendanceStatus {
   going
   interested
 }
-
+input CreateConversationInput {
+  user_ids: [ID!]!
+  message: String!
+}
+type Conversation {
+  id: ID!
+  message: String!
+  user: User!
+  last_reply: String!
+  created_at: String!
+  updated_at: String!
+  conversations: [Conversation!]!
+}
 type AuthToken {
   accessToken: String!
   expiredAt: Time!
@@ -875,11 +1035,13 @@ input CreateAttendanceInput {
 }
 type Query {
   comments(meetup_id: ID!): [Comment!]!
+
   meetups(
     filter: MeetupFilterInput
     limit: Int = 10
     offset: Int = 0
   ): [Meetup!]!
+
   filteredMeetupsForUser(
     filter: MeetupFilterInput
     limit: Int = 10
@@ -887,9 +1049,13 @@ type Query {
   ): [Meetup!]!
 
   meetup(id: ID!): Meetup!
-  authenticatedUser: User!
 
+  authenticatedUser: User!
   user(id: ID!): User!
+
+  conversation(id: ID!): Conversation!
+  conversations: [Conversation!]!
+
   categories(limit: Int = 10, offset: Int = 0): [Category!]!
   category(name: String!): Category!
 }
@@ -916,6 +1082,15 @@ type Mutation {
   createMeetup(input: CreateMeetupInput!): Meetup!
   updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
   deleteMeetup(id: ID!): Boolean!
+
+  createMessage(conversation_id: ID!, input: CreateMessageInput!): Conversation!
+  createConversation(input: CreateConversationInput!): Conversation!
+}
+input CreateMessageInput {
+  message: String!
+}
+type Subscription {
+  messageAdded(id: ID!): Conversation!
 }
 `, BuiltIn: false},
 }
@@ -967,6 +1142,20 @@ func (ec *executionContext) field_Mutation_createComment_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createConversation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateConversationInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNCreateConversationInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateConversationInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createInterest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -992,6 +1181,28 @@ func (ec *executionContext) field_Mutation_createMeetup_args(ctx context.Context
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createMessage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["conversation_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["conversation_id"] = arg0
+	var arg1 models.CreateMessageInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg1, err = ec.unmarshalNCreateMessageInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMessageInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -1245,6 +1456,20 @@ func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_conversation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_filteredMeetupsForUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1320,6 +1545,20 @@ func (ec *executionContext) field_Query_meetups_args(ctx context.Context, rawArg
 }
 
 func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_messageAdded_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1911,6 +2150,244 @@ func (ec *executionContext) _Comment_replies(ctx context.Context, field graphql.
 	res := resTmp.([]*models.Comment)
 	fc.Result = res
 	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCommentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_id(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_message(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_user(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_last_reply(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastReply, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_created_at(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_updated_at(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Conversation_conversations(ctx context.Context, field graphql.CollectedField, obj *models.Conversation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Conversation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Conversations, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Conversation)
+	fc.Result = res
+	return ec.marshalNConversation2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Meetup_id(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
@@ -2807,6 +3284,88 @@ func (ec *executionContext) _Mutation_deleteMeetup(ctx context.Context, field gr
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createMessage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateMessage(rctx, args["conversation_id"].(string), args["input"].(models.CreateMessageInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Conversation)
+	fc.Result = res
+	return ec.marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createConversation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createConversation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateConversation(rctx, args["input"].(models.CreateConversationInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Conversation)
+	fc.Result = res
+	return ec.marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3046,6 +3605,81 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_conversation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_conversation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Conversation(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Conversation)
+	fc.Result = res
+	return ec.marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_conversations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Conversations(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Conversation)
+	fc.Result = res
+	return ec.marshalNConversation2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversationᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_categories(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3195,6 +3829,57 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Subscription_messageAdded(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Subscription",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Subscription_messageAdded_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().MessageAdded(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *models.Conversation)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -4630,6 +5315,30 @@ func (ec *executionContext) unmarshalInputCreateCommentInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateConversationInput(ctx context.Context, obj interface{}) (models.CreateConversationInput, error) {
+	var it models.CreateConversationInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "user_ids":
+			var err error
+			it.UserIds, err = ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message":
+			var err error
+			it.Message, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateMeetupInput(ctx context.Context, obj interface{}) (models.CreateMeetupInput, error) {
 	var it models.CreateMeetupInput
 	var asMap = obj.(map[string]interface{})
@@ -4657,6 +5366,24 @@ func (ec *executionContext) unmarshalInputCreateMeetupInput(ctx context.Context,
 		case "description":
 			var err error
 			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateMessageInput(ctx context.Context, obj interface{}) (models.CreateMessageInput, error) {
+	var it models.CreateMessageInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "message":
+			var err error
+			it.Message, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5092,6 +5819,63 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var conversationImplementors = []string{"Conversation"}
+
+func (ec *executionContext) _Conversation(ctx context.Context, sel ast.SelectionSet, obj *models.Conversation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, conversationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Conversation")
+		case "id":
+			out.Values[i] = ec._Conversation_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "message":
+			out.Values[i] = ec._Conversation_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._Conversation_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "last_reply":
+			out.Values[i] = ec._Conversation_last_reply(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "created_at":
+			out.Values[i] = ec._Conversation_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updated_at":
+			out.Values[i] = ec._Conversation_updated_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "conversations":
+			out.Values[i] = ec._Conversation_conversations(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var meetupImplementors = []string{"Meetup"}
 
 func (ec *executionContext) _Meetup(ctx context.Context, sel ast.SelectionSet, obj *models.Meetup) graphql.Marshaler {
@@ -5280,6 +6064,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createMessage":
+			out.Values[i] = ec._Mutation_createMessage(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createConversation":
+			out.Values[i] = ec._Mutation_createConversation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5390,6 +6184,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "conversation":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_conversation(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "conversations":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_conversations(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "categories":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5431,6 +6253,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		return graphql.Null
 	}
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func() graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "messageAdded":
+		return ec._Subscription_messageAdded(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var userImplementors = []string{"User"}
@@ -5976,6 +6818,57 @@ func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋsecmohammedᚋmeet
 	return ec._Comment(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNConversation2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx context.Context, sel ast.SelectionSet, v models.Conversation) graphql.Marshaler {
+	return ec._Conversation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNConversation2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversationᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Conversation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx context.Context, sel ast.SelectionSet, v *models.Conversation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Conversation(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateAttendanceInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateAttendanceInput(ctx context.Context, v interface{}) (models.CreateAttendanceInput, error) {
 	return ec.unmarshalInputCreateAttendanceInput(ctx, v)
 }
@@ -5988,8 +6881,16 @@ func (ec *executionContext) unmarshalNCreateCommentInput2githubᚗcomᚋsecmoham
 	return ec.unmarshalInputCreateCommentInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNCreateConversationInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateConversationInput(ctx context.Context, v interface{}) (models.CreateConversationInput, error) {
+	return ec.unmarshalInputCreateConversationInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNCreateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMeetupInput(ctx context.Context, v interface{}) (models.CreateMeetupInput, error) {
 	return ec.unmarshalInputCreateMeetupInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNCreateMessageInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMessageInput(ctx context.Context, v interface{}) (models.CreateMessageInput, error) {
+	return ec.unmarshalInputCreateMessageInput(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -6004,6 +6905,35 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNMeetup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetup(ctx context.Context, sel ast.SelectionSet, v models.Meetup) graphql.Marshaler {

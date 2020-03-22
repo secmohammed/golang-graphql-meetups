@@ -4,7 +4,19 @@ enum AttendanceStatus {
   going
   interested
 }
-
+input CreateConversationInput {
+  user_ids: [ID!]!
+  message: String!
+}
+type Conversation {
+  id: ID!
+  message: String!
+  user: User!
+  last_reply: String!
+  created_at: String!
+  updated_at: String!
+  conversations: [Conversation!]!
+}
 type AuthToken {
   accessToken: String!
   expiredAt: Time!
@@ -102,11 +114,13 @@ input CreateAttendanceInput {
 }
 type Query {
   comments(meetup_id: ID!): [Comment!]!
+
   meetups(
     filter: MeetupFilterInput
     limit: Int = 10
     offset: Int = 0
   ): [Meetup!]!
+
   filteredMeetupsForUser(
     filter: MeetupFilterInput
     limit: Int = 10
@@ -114,9 +128,13 @@ type Query {
   ): [Meetup!]!
 
   meetup(id: ID!): Meetup!
-  authenticatedUser: User!
 
+  authenticatedUser: User!
   user(id: ID!): User!
+
+  conversation(id: ID!): Conversation!
+  conversations: [Conversation!]!
+
   categories(limit: Int = 10, offset: Int = 0): [Category!]!
   category(name: String!): Category!
 }
@@ -143,4 +161,13 @@ type Mutation {
   createMeetup(input: CreateMeetupInput!): Meetup!
   updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
   deleteMeetup(id: ID!): Boolean!
+
+  createMessage(conversation_id: ID!, input: CreateMessageInput!): Conversation!
+  createConversation(input: CreateConversationInput!): Conversation!
+}
+input CreateMessageInput {
+  message: String!
+}
+type Subscription {
+  messageAdded(id: ID!): Conversation!
 }

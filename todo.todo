@@ -1,5 +1,5 @@
- ✔ Meetup needs comments. @done (20-03-19 05:52)
- ✔ Meetup comments CRUD. @done (20-03-19 07:11)
+ ✔ Meetup needs comments/replies. @done (20-03-19 05:52)
+ ✔ Meetup comments/replies CRUD. @done (20-03-19 07:11)
  ✔ Meetup needs attendance and attendance count for each event. @done (20-03-20 08:17)
  ✔ Meetup/User needs to upload photo. @done (20-03-21 09:26)
  ✔ Meetup needs categories @done (20-03-19 08:09)
@@ -15,3 +15,4 @@
  ≡ Optional: Chat between users.
  ≡ Optional: notifications.
  ≡ Optional: schedule reminders for upcoming events.
+ ≡ Refactor middlewares to custom directive schema.
