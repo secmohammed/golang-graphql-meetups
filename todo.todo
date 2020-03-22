@@ -15,4 +15,4 @@
  ≡ Optional: Chat between users(WIP).
  ≡ Optional: notifications.
  ≡ Optional: schedule reminders for upcoming events.
- ≡ Refactor middlewares to custom directive schema.
+ ✔ Refactor middlewares to custom directive schema. @done (20-03-22 07:31)
