@@ -1,4 +1,4 @@
-CREATE TABLE conversations(
+CREATE TABLE IF NOT EXISTS  conversations(
     id BIGSERIAL PRIMARY KEY,
     message TEXT NOT NULL,
     user_id BIGSERIAL REFERENCES users (id) ON DELETE CASCADE NOT NULL,

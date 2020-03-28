@@ -1,4 +1,4 @@
-CREATE TABLE meetups(
+CREATE TABLE IF NOT EXISTS  meetups(
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,

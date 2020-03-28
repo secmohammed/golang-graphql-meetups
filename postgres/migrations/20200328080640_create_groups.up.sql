@@ -1,4 +1,4 @@
-CREATE TABLE groups(
+CREATE TABLE IF NOT EXISTS  groups(
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(55) NOT NULL,
     description TEXT NOT NULL,
