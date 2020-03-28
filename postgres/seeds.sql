@@ -1,3 +1,59 @@
-INSERT INTO users (username, email) VALUES('bob', 'bob@gmail.com'), ('jon', 'jon@gmail.com'), ('jane', 'jane@gmail.com');
 
-INSERT INTO meetups (name, description, user_id) VALUES ('My first meetup', 'this is a description', 1), ('golang meetup', 'meetup description', 2), ('graphql meetup', 'meetup description', 3)
+INSERT INTO attendees ("id", "user_id", "meetup_id", "status", "created_at", "updated_at", "deleted_at") VALUES
+('1', '1', '1', 'interested', '2020-03-20 07:29:16.241861+02', '2020-03-20 07:29:16.241861+02', NULL),
+('2', '1', '1', 'going', '2020-03-20 08:00:28.796825+02', '2020-03-20 08:00:28.796825+02', NULL),
+('3', '1', '1', 'going', '2020-03-20 08:00:48.906586+02', '2020-03-20 08:00:48.906586+02', NULL),
+('4', '1', '1', 'interested', '2020-03-20 08:00:54.826257+02', '2020-03-20 08:00:54.826257+02', '2020-03-20 08:15:41.741319+02');
+
+INSERT INTO categories ("id", "name", "user_id", "created_at", "updated_at", "deleted_at") VALUES
+('1', 'laravel', '2', '2020-03-19 09:14:51.092891+02', '2020-03-19 09:14:51.092891+02', NULL),
+('2', 'golang', '2', '2020-03-19 13:43:09.74425+02', '2020-03-19 13:43:09.74425+02', NULL),
+('3', 'laravel', '2', '2020-03-19 13:46:14.322901+02', '2020-03-19 13:46:14.322901+02', NULL),
+('4', 'laravel', '3', '2020-03-22 07:49:32.972604+02', '2020-03-22 07:49:32.972604+02', NULL),
+('5', 'laravel', '3', '2020-03-22 07:49:36.730186+02', '2020-03-22 07:49:36.730186+02', NULL);
+
+INSERT INTO category_meetup ("meetup_id", "category_id") VALUES
+('1', '1'),
+('2', '1'),
+('3', '3'),
+('3', '2');
+
+INSERT INTO category_user ("user_id", "category_id") VALUES
+('1', '1'),
+('2', '3');
+
+INSERT INTO comments ("id", "body", "user_id", "meetup_id", "created_at", "updated_at", "deleted_at", "parent_id") VALUES
+('3', 'hello', '1', '1', '2020-03-20 05:19:57.737346+02', '2020-03-20 05:19:57.737346+02', NULL, NULL),
+('4', 'hello reply', '1', '1', '2020-03-20 05:19:57.737346+02', '2020-03-20 05:19:57.737346+02', NULL, '3'),
+('5', 'Hello', '1', '1', '2020-03-20 05:48:15.264646+02', '2020-03-20 05:48:15.264646+02', NULL, NULL),
+('6', 'Hello', '1', '1', '2020-03-20 05:49:15.513802+02', '2020-03-20 05:49:15.513802+02', NULL, NULL),
+('8', 'Hello', '1', '1', '2020-03-20 05:50:58.475447+02', '2020-03-20 05:50:58.475447+02', NULL, '3'),
+('9', 'Hello there', '1', '1', '2020-03-20 05:51:06.326226+02', '2020-03-20 05:51:06.326226+02', NULL, '4'),
+('17', 'Hello there', '1', '1', '2020-03-20 06:02:42.927349+02', '2020-03-20 06:02:42.927349+02', NULL, '4'),
+('18', 'Hello', '1', '1', '2020-03-20 06:20:24.576725+02', '2020-03-20 06:20:24.576725+02', NULL, NULL);
+
+INSERT INTO conversation_user ("conversation_id", "user_id") VALUES
+('1', '1'),
+('1', '3');
+
+INSERT INTO conversations ("id", "message", "user_id", "parent_id", "last_reply", "created_at", "updated_at", "deleted_at") VALUES
+('1', 'hello', '1', NULL, NULL, '2020-03-22 08:43:20.325744+02', '2020-03-22 08:43:20.325744+02', NULL),
+('2', 'hello', '1', '1', NULL, '2020-03-22 08:43:20.325744+02', '2020-03-22 08:43:20.325744+02', NULL),
+('3', 'Hello', '3', '1', '2020-03-22 08:58:21+02', '2020-03-22 08:58:21.247206+02', '2020-03-22 08:58:21.247206+02', NULL),
+('4', 'Hello', '3', '1', '2020-03-22 08:58:49+02', '2020-03-22 08:58:49.878236+02', '2020-03-22 08:58:49.878236+02', NULL),
+('5', 'Hello', '3', '1', '2020-03-22 09:06:11+02', '2020-03-22 09:06:11.247538+02', '2020-03-22 09:06:11.247538+02', NULL),
+('6', 'Hello', '3', '1', '2020-03-22 09:26:24+02', '2020-03-22 09:26:24.532765+02', '2020-03-22 09:26:24.532765+02', NULL),
+('7', 'Hello', '3', '1', '2020-03-22 09:28:23+02', '2020-03-22 09:28:23.025733+02', '2020-03-22 09:28:23.025733+02', NULL);
+
+INSERT INTO meetups ("id", "name", "description", "user_id", "created_at", "updated_at", "deleted_at", "start_date", "end_date", "location") VALUES
+('1', 'golang', 'our first meetup', '1', '2020-03-19 09:14:39.875578+02', '2020-03-19 09:14:39.875578+02', NULL, '2020-03-20 11:25:08.573496+02', '2020-03-20 11:25:08.573496+02', 'somewhere'),
+('2', 'laravel', 'our first meetup', '1', '2020-03-19 09:14:39.875578+02', '2020-03-19 09:14:39.875578+02', NULL, '2020-03-20 11:25:08.573496+02', '2020-03-20 11:25:08.573496+02', NULL),
+('3', 'graphql', 'our first meetup', '2', '2020-03-19 09:14:39.875578+02', '2020-03-19 09:14:39.875578+02', NULL, '2020-03-20 11:25:08.573496+02', '2020-03-20 11:25:08.573496+02', NULL);
+
+INSERT INTO schema_migrations ("version", "dirty") VALUES
+('31200316075731', 'f');
+
+INSERT INTO users ("id", "username", "email", "first_name", "last_name", "password", "created_at", "updated_at", "deleted_at", "avatar") VALUES
+('1', 'hassan', 'hassan@ieee.org', 'mohammed', 'osama', '$2a$10$FK8uUF5BTtRQSIXnFN0K5Oh/mKafbxuD3svYEQjg9Asv06f927cbO', '2020-03-19 09:13:52.411525+02', '2020-03-19 09:13:52.411525+02', NULL, NULL),
+('2', 'ahmed', 'ahmedosama@ieee.org', 'mohammed', 'osama', '$2a$10$FK8uUF5BTtRQSIXnFN0K5Oh/mKafbxuD3svYEQjg9Asv06f927cbO', '2020-03-19 09:13:52.411525+02', '2020-03-19 09:13:52.411525+02', NULL, NULL),
+('3', 'mohammed', 'mohammedosama@ieee.org', 'mohammed', 'osama', '$2a$10$ZUoreRjd.7NO6zSFTxEBpuz5Oslev4Pk7rH71pRVow4a7PRpg599S', '2020-03-21 10:23:51.300705+02', '2020-03-21 10:23:51.300705+02', NULL, NULL);
