@@ -11,9 +11,11 @@
  ✔ user needs to add interests based on category. @done (20-03-21 07:04)
  ✔ index events according to users based on interests @done (20-03-21 07:54)
  ≡ Add the ability for user to share the meetup to other groups and vice versa.
+ ≡ Optional: ability to put group under categories.
  ≡ user needs to search for categories using aloglia for fast search in frontend(indexing categories.)
  ≡ Optional: ability for users to create groups that they can post meetups at.
  ≡ Optional: Chat between users(WIP).
  ≡ Optional: notifications.
  ≡ Optional: schedule reminders for upcoming events.
+ ≡ Optional: implement GraphQL Federation.
  ✔ Refactor middlewares to custom directive schema. @done (20-03-22 07:31)
