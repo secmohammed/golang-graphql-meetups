@@ -60,6 +60,7 @@ func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID str
         return nil, err
     }
     for _, observer := range conversationMessageAdded {
+        // implement logic here to push the conversation to only people related.
         observer <- conversation
     }
 
