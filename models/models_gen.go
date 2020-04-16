@@ -18,6 +18,7 @@ type AuthToken struct {
 	AccessToken string    `json:"accessToken"`
 	ExpiredAt   time.Time `json:"expiredAt"`
 }
+
 type Authentication string
 
 const (

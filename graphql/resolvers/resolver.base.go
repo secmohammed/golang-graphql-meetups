@@ -15,6 +15,7 @@ type Resolver struct {
     CategoriesRepo    postgres.CategoriesRepo
     AttendeesRepo     postgres.AttendeesRepo
     ConversationsRepo postgres.ConversationsRepo
+    GroupsRepo        postgres.GroupsRepo
 }
 
 type mutationResolver struct{ *Resolver }

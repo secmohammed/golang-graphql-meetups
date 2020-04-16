@@ -50,6 +50,7 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         CategoriesRepo:    postgres.CategoriesRepo{DB: DB},
         AttendeesRepo:     postgres.AttendeesRepo{DB: DB},
         ConversationsRepo: postgres.ConversationsRepo{DB: DB},
+        GroupsRepo:        postgres.GroupsRepo{DB: DB},
     }}
     c.Directives.Authentication = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, auth models.Authentication) (res interface{}, err error) {
         _, err = middlewares.GetCurrentUserFromContext(ctx)
@@ -61,6 +62,10 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         }
 
         // or let it pass through
+        return next(ctx)
+    }
+    c.Directives.HasRole = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, role models.Role) (res interface{}, err error) {
+        fmt.Println(ctx, obj, role)
         return next(ctx)
     }
     router.Use(middlewares.AuthMiddleware(userRepo))

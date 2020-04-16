@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	DB := utils.SetDatabaseConnection()
+	DB := utils.NewDatabaseConnection()
 	defer DB.Close()
 	router := routes.SetupRoutes(DB)
 

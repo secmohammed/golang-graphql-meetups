@@ -42,6 +42,7 @@ type ResolverRoot interface {
 	Category() CategoryResolver
 	Comment() CommentResolver
 	Conversation() ConversationResolver
+	Group() GroupResolver
 	Meetup() MeetupResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -51,6 +52,7 @@ type ResolverRoot interface {
 
 type DirectiveRoot struct {
 	Authentication func(ctx context.Context, obj interface{}, next graphql.Resolver, auth models.Authentication) (res interface{}, err error)
+	HasRole        func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.Role) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -95,6 +97,15 @@ type ComplexityRoot struct {
 		User          func(childComplexity int) int
 	}
 
+	Group struct {
+		Categories  func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Members     func(childComplexity int) int
+		Name        func(childComplexity int) int
+		User        func(childComplexity int) int
+	}
+
 	Meetup struct {
 		Attendees   func(childComplexity int) int
 		Categories  func(childComplexity int) int
@@ -106,24 +117,28 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateAttendance   func(childComplexity int, input models.CreateAttendanceInput) int
-		CreateCategory     func(childComplexity int, input models.CreateCategoryInput) int
-		CreateComment      func(childComplexity int, input models.CreateCommentInput) int
-		CreateConversation func(childComplexity int, input models.CreateConversationInput) int
-		CreateInterest     func(childComplexity int, categoryID string) int
-		CreateMeetup       func(childComplexity int, input models.CreateMeetupInput) int
-		CreateMessage      func(childComplexity int, conversationID string, input models.CreateMessageInput) int
-		DeleteAttendance   func(childComplexity int, id string) int
-		DeleteCategory     func(childComplexity int, name string) int
-		DeleteComment      func(childComplexity int, id string) int
-		DeleteInterest     func(childComplexity int, categoryID string) int
-		DeleteMeetup       func(childComplexity int, id string) int
-		Login              func(childComplexity int, input *models.LoginInput) int
-		Register           func(childComplexity int, input *models.RegisterInput) int
-		UpdateAttendance   func(childComplexity int, id string, status models.AttendanceStatus) int
-		UpdateCategory     func(childComplexity int, name string, input *models.CreateCategoryInput) int
-		UpdateComment      func(childComplexity int, id string, input models.UpdateCommentInput) int
-		UpdateMeetup       func(childComplexity int, id string, input models.UpdateMeetupInput) int
+		AssignMemberToGroup func(childComplexity int, id string, userID string) int
+		CreateAttendance    func(childComplexity int, input models.CreateAttendanceInput) int
+		CreateCategory      func(childComplexity int, input models.CreateCategoryInput) int
+		CreateComment       func(childComplexity int, input models.CreateCommentInput) int
+		CreateConversation  func(childComplexity int, input models.CreateConversationInput) int
+		CreateGroup         func(childComplexity int, input models.CreateGroupInput) int
+		CreateInterest      func(childComplexity int, categoryID string) int
+		CreateMeetup        func(childComplexity int, input models.CreateMeetupInput) int
+		CreateMessage       func(childComplexity int, conversationID string, input models.CreateMessageInput) int
+		DeleteAttendance    func(childComplexity int, id string) int
+		DeleteCategory      func(childComplexity int, name string) int
+		DeleteComment       func(childComplexity int, id string) int
+		DeleteGroup         func(childComplexity int, id string) int
+		DeleteInterest      func(childComplexity int, categoryID string) int
+		DeleteMeetup        func(childComplexity int, id string) int
+		Login               func(childComplexity int, input *models.LoginInput) int
+		Register            func(childComplexity int, input *models.RegisterInput) int
+		UpdateAttendance    func(childComplexity int, id string, status models.AttendanceStatus) int
+		UpdateCategory      func(childComplexity int, name string, input *models.CreateCategoryInput) int
+		UpdateComment       func(childComplexity int, id string, input models.UpdateCommentInput) int
+		UpdateGroup         func(childComplexity int, id string, input models.UpdateGroupInput) int
+		UpdateMeetup        func(childComplexity int, id string, input models.UpdateMeetupInput) int
 	}
 
 	Query struct {
@@ -134,6 +149,8 @@ type ComplexityRoot struct {
 		Conversation           func(childComplexity int, id string) int
 		Conversations          func(childComplexity int) int
 		FilteredMeetupsForUser func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
+		Group                  func(childComplexity int, id string) int
+		Groups                 func(childComplexity int) int
 		Meetup                 func(childComplexity int, id string) int
 		Meetups                func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
 		User                   func(childComplexity int, id string) int
@@ -154,6 +171,11 @@ type ComplexityRoot struct {
 		Meetups   func(childComplexity int) int
 		Username  func(childComplexity int) int
 	}
+
+	UserGroup struct {
+		Type func(childComplexity int) int
+		User func(childComplexity int) int
+	}
 }
 
 type AttendeeResolver interface {
@@ -171,6 +193,11 @@ type CommentResolver interface {
 type ConversationResolver interface {
 	Conversations(ctx context.Context, obj *models.Conversation) ([]*models.Conversation, error)
 }
+type GroupResolver interface {
+	User(ctx context.Context, obj *models.Group) (*models.User, error)
+	Categories(ctx context.Context, obj *models.Group) ([]*models.Category, error)
+	Members(ctx context.Context, obj *models.Group) ([]*models.UserGroup, error)
+}
 type MeetupResolver interface {
 	User(ctx context.Context, obj *models.Meetup) (*models.User, error)
 	Comments(ctx context.Context, obj *models.Meetup) ([]*models.Comment, error)
@@ -178,6 +205,10 @@ type MeetupResolver interface {
 	Attendees(ctx context.Context, obj *models.Meetup) ([]*models.Attendee, error)
 }
 type MutationResolver interface {
+	CreateGroup(ctx context.Context, input models.CreateGroupInput) (*models.Group, error)
+	DeleteGroup(ctx context.Context, id string) (bool, error)
+	UpdateGroup(ctx context.Context, id string, input models.UpdateGroupInput) (*models.Group, error)
+	AssignMemberToGroup(ctx context.Context, id string, userID string) (*models.Group, error)
 	CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error)
 	UpdateAttendance(ctx context.Context, id string, status models.AttendanceStatus) (*models.Attendee, error)
 	DeleteAttendance(ctx context.Context, id string) (bool, error)
@@ -199,6 +230,8 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Comments(ctx context.Context, meetupID string) ([]*models.Comment, error)
+	Groups(ctx context.Context) ([]*models.Group, error)
+	Group(ctx context.Context, id string) (*models.Group, error)
 	Meetups(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error)
 	FilteredMeetupsForUser(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error)
 	Meetup(ctx context.Context, id string) (*models.Meetup, error)
@@ -394,6 +427,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Conversation.User(childComplexity), true
 
+	case "Group.categories":
+		if e.complexity.Group.Categories == nil {
+			break
+		}
+
+		return e.complexity.Group.Categories(childComplexity), true
+
+	case "Group.description":
+		if e.complexity.Group.Description == nil {
+			break
+		}
+
+		return e.complexity.Group.Description(childComplexity), true
+
+	case "Group.id":
+		if e.complexity.Group.ID == nil {
+			break
+		}
+
+		return e.complexity.Group.ID(childComplexity), true
+
+	case "Group.members":
+		if e.complexity.Group.Members == nil {
+			break
+		}
+
+		return e.complexity.Group.Members(childComplexity), true
+
+	case "Group.name":
+		if e.complexity.Group.Name == nil {
+			break
+		}
+
+		return e.complexity.Group.Name(childComplexity), true
+
+	case "Group.user":
+		if e.complexity.Group.User == nil {
+			break
+		}
+
+		return e.complexity.Group.User(childComplexity), true
+
 	case "Meetup.attendees":
 		if e.complexity.Meetup.Attendees == nil {
 			break
@@ -443,6 +518,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Meetup.User(childComplexity), true
 
+	case "Mutation.assignMemberToGroup":
+		if e.complexity.Mutation.AssignMemberToGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_assignMemberToGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AssignMemberToGroup(childComplexity, args["id"].(string), args["userID"].(string)), true
+
 	case "Mutation.createAttendance":
 		if e.complexity.Mutation.CreateAttendance == nil {
 			break
@@ -490,6 +577,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateConversation(childComplexity, args["input"].(models.CreateConversationInput)), true
+
+	case "Mutation.createGroup":
+		if e.complexity.Mutation.CreateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateGroup(childComplexity, args["input"].(models.CreateGroupInput)), true
 
 	case "Mutation.createInterest":
 		if e.complexity.Mutation.CreateInterest == nil {
@@ -562,6 +661,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteComment(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteGroup":
+		if e.complexity.Mutation.DeleteGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteGroup(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteInterest":
 		if e.complexity.Mutation.DeleteInterest == nil {
@@ -646,6 +757,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateComment(childComplexity, args["id"].(string), args["input"].(models.UpdateCommentInput)), true
+
+	case "Mutation.updateGroup":
+		if e.complexity.Mutation.UpdateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateGroup(childComplexity, args["id"].(string), args["input"].(models.UpdateGroupInput)), true
 
 	case "Mutation.updateMeetup":
 		if e.complexity.Mutation.UpdateMeetup == nil {
@@ -732,6 +855,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.FilteredMeetupsForUser(childComplexity, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int)), true
+
+	case "Query.group":
+		if e.complexity.Query.Group == nil {
+			break
+		}
+
+		args, err := ec.field_Query_group_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Group(childComplexity, args["id"].(string)), true
+
+	case "Query.groups":
+		if e.complexity.Query.Groups == nil {
+			break
+		}
+
+		return e.complexity.Query.Groups(childComplexity), true
 
 	case "Query.meetup":
 		if e.complexity.Query.Meetup == nil {
@@ -839,6 +981,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Username(childComplexity), true
 
+	case "UserGroup.type":
+		if e.complexity.UserGroup.Type == nil {
+			break
+		}
+
+		return e.complexity.UserGroup.Type(childComplexity), true
+
+	case "UserGroup.user":
+		if e.complexity.UserGroup.User == nil {
+			break
+		}
+
+		return e.complexity.UserGroup.User(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -927,12 +1083,28 @@ enum AttendanceStatus {
   interested
 }
 directive @authentication(auth: Authentication!) on FIELD_DEFINITION
-
+directive @hasRole(role: Role!) on FIELD_DEFINITION
+enum Role {
+  MEMBER
+  ADMIN
+  MODERATOR
+}
 enum Authentication {
   GUEST
   AUTHENTICATED
 }
-
+type UserGroup {
+  user: User!
+  type: String!
+}
+type Group {
+  id: ID!
+  name: String!
+  description: String!
+  user: User!
+  categories: [Category!]!
+  members: [UserGroup!]!
+}
 input CreateConversationInput {
   user_ids: [ID!]!
   message: String!
@@ -1000,6 +1172,17 @@ input CreateMeetupInput {
   end_date: String!
   description: String!
 }
+input CreateGroupInput {
+  name: String!
+  description: String!
+  categories: [ID!]!
+}
+input UpdateGroupInput {
+  name: String!
+  description: String!
+  categories: [ID!]
+}
+
 input RegisterInput {
   username: String!
   email: String!
@@ -1044,6 +1227,9 @@ input CreateAttendanceInput {
 type Query {
   comments(meetup_id: ID!): [Comment!]!
 
+  groups: [Group!]!
+  group(id: ID!): Group!
+
   meetups(
     filter: MeetupFilterInput
     limit: Int = 10
@@ -1067,8 +1253,13 @@ type Query {
   categories(limit: Int = 10, offset: Int = 0): [Category!]!
   category(name: String!): Category!
 }
-
 type Mutation {
+  createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
+  deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED) @hasRole(role: ADMIN)
+
+  updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
+  # we need to make sure that user who does that is actually an admin.
+  assignMemberToGroup(id: ID!, userID: ID!): Group! @authentication(auth: AUTHENTICATED) @hasRole(role: ADMIN)
   createAttendance(input: CreateAttendanceInput!): Attendee!
     @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
@@ -1136,6 +1327,42 @@ func (ec *executionContext) dir_authentication_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) dir_hasRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.Role
+	if tmp, ok := rawArgs["role"]; ok {
+		arg0, err = ec.unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["role"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_assignMemberToGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["userID"]; ok {
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createAttendance_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1184,6 +1411,20 @@ func (ec *executionContext) field_Mutation_createConversation_args(ctx context.C
 	var arg0 models.CreateConversationInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNCreateConversationInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateConversationInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateGroupInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNCreateGroupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateGroupInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1271,6 +1512,20 @@ func (ec *executionContext) field_Mutation_deleteCategory_args(ctx context.Conte
 }
 
 func (ec *executionContext) field_Mutation_deleteComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1406,6 +1661,28 @@ func (ec *executionContext) field_Mutation_updateComment_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 models.UpdateGroupInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg1, err = ec.unmarshalNUpdateGroupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateGroupInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateMeetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1533,6 +1810,20 @@ func (ec *executionContext) field_Query_filteredMeetupsForUser_args(ctx context.
 		}
 	}
 	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_group_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -2412,6 +2703,210 @@ func (ec *executionContext) _Conversation_conversations(ctx context.Context, fie
 	return ec.marshalNConversation2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversationᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Group_id(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Group_name(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Group_description(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Group_user(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Group().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Group_categories(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Group().Categories(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Category)
+	fc.Result = res
+	return ec.marshalNCategory2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCategoryᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Group_members(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Group().Members(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.UserGroup)
+	fc.Result = res
+	return ec.marshalNUserGroup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUserGroupᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Meetup_id(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2648,6 +3143,286 @@ func (ec *executionContext) _Meetup_attendees(ctx context.Context, field graphql
 	res := resTmp.([]*models.Attendee)
 	fc.Result = res
 	return ec.marshalNAttendee2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendeeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createGroup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateGroup(rctx, args["input"].(models.CreateGroupInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Group); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Group`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteGroup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteGroup(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+		directive2 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx, "ADMIN")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive1, role)
+		}
+
+		tmp, err := directive2(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateGroup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateGroup(rctx, args["id"].(string), args["input"].(models.UpdateGroupInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Group); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Group`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_assignMemberToGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_assignMemberToGroup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().AssignMemberToGroup(rctx, args["id"].(string), args["userID"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+		directive2 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx, "ADMIN")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive1, role)
+		}
+
+		tmp, err := directive2(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Group); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Group`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createAttendance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3861,6 +4636,81 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCommentᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_groups(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Groups(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroupᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_group(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_group_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Group(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_meetups(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4681,6 +5531,74 @@ func (ec *executionContext) _User_comments(ctx context.Context, field graphql.Co
 	res := resTmp.([]*models.Comment)
 	fc.Result = res
 	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCommentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserGroup_user(ctx context.Context, field graphql.CollectedField, obj *models.UserGroup) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "UserGroup",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserGroup_type(ctx context.Context, field graphql.CollectedField, obj *models.UserGroup) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "UserGroup",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5834,6 +6752,36 @@ func (ec *executionContext) unmarshalInputCreateConversationInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateGroupInput(ctx context.Context, obj interface{}) (models.CreateGroupInput, error) {
+	var it models.CreateGroupInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "categories":
+			var err error
+			it.Categories, err = ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateMeetupInput(ctx context.Context, obj interface{}) (models.CreateMeetupInput, error) {
 	var it models.CreateMeetupInput
 	var asMap = obj.(map[string]interface{})
@@ -6017,6 +6965,36 @@ func (ec *executionContext) unmarshalInputUpdateCommentInput(ctx context.Context
 		case "parent_id":
 			var err error
 			it.ParentID, err = ec.unmarshalOString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateGroupInput(ctx context.Context, obj interface{}) (models.UpdateGroupInput, error) {
+	var it models.UpdateGroupInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "categories":
+			var err error
+			it.Categories, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6380,6 +7358,85 @@ func (ec *executionContext) _Conversation(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var groupImplementors = []string{"Group"}
+
+func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, obj *models.Group) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Group")
+		case "id":
+			out.Values[i] = ec._Group_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._Group_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Group_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Group_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "categories":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Group_categories(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "members":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Group_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var meetupImplementors = []string{"Meetup"}
 
 func (ec *executionContext) _Meetup(ctx context.Context, sel ast.SelectionSet, obj *models.Meetup) graphql.Marshaler {
@@ -6488,6 +7545,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createGroup":
+			out.Values[i] = ec._Mutation_createGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteGroup":
+			out.Values[i] = ec._Mutation_deleteGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateGroup":
+			out.Values[i] = ec._Mutation_updateGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "assignMemberToGroup":
+			out.Values[i] = ec._Mutation_assignMemberToGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createAttendance":
 			out.Values[i] = ec._Mutation_createAttendance(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -6613,6 +7690,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_comments(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "groups":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_groups(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "group":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_group(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -6862,6 +7967,38 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userGroupImplementors = []string{"UserGroup"}
+
+func (ec *executionContext) _UserGroup(ctx context.Context, sel ast.SelectionSet, obj *models.UserGroup) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userGroupImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserGroup")
+		case "user":
+			out.Values[i] = ec._UserGroup_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "type":
+			out.Values[i] = ec._UserGroup_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7398,12 +8535,67 @@ func (ec *executionContext) unmarshalNCreateConversationInput2githubᚗcomᚋsec
 	return ec.unmarshalInputCreateConversationInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNCreateGroupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateGroupInput(ctx context.Context, v interface{}) (models.CreateGroupInput, error) {
+	return ec.unmarshalInputCreateGroupInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNCreateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMeetupInput(ctx context.Context, v interface{}) (models.CreateMeetupInput, error) {
 	return ec.unmarshalInputCreateMeetupInput(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNCreateMessageInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMessageInput(ctx context.Context, v interface{}) (models.CreateMessageInput, error) {
 	return ec.unmarshalInputCreateMessageInput(ctx, v)
+}
+
+func (ec *executionContext) marshalNGroup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx context.Context, sel ast.SelectionSet, v models.Group) graphql.Marshaler {
+	return ec._Group(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Group) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐGroup(ctx context.Context, sel ast.SelectionSet, v *models.Group) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Group(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -7500,6 +8692,15 @@ func (ec *executionContext) marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetu
 	return ec._Meetup(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx context.Context, v interface{}) (models.Role, error) {
+	var res models.Role
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx context.Context, sel ast.SelectionSet, v models.Role) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -7532,6 +8733,10 @@ func (ec *executionContext) unmarshalNUpdateCommentInput2githubᚗcomᚋsecmoham
 	return ec.unmarshalInputUpdateCommentInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNUpdateGroupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateGroupInput(ctx context.Context, v interface{}) (models.UpdateGroupInput, error) {
+	return ec.unmarshalInputUpdateGroupInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNUpdateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUpdateMeetupInput(ctx context.Context, v interface{}) (models.UpdateMeetupInput, error) {
 	return ec.unmarshalInputUpdateMeetupInput(ctx, v)
 }
@@ -7548,6 +8753,57 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetups
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUserGroup2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUserGroup(ctx context.Context, sel ast.SelectionSet, v models.UserGroup) graphql.Marshaler {
+	return ec._UserGroup(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserGroup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUserGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.UserGroup) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUserGroup(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNUserGroup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUserGroup(ctx context.Context, sel ast.SelectionSet, v *models.UserGroup) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UserGroup(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -7809,6 +9065,38 @@ func (ec *executionContext) unmarshalOCreateCategoryInput2ᚖgithubᚗcomᚋsecm
 	}
 	res, err := ec.unmarshalOCreateCategoryInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateCategoryInput(ctx, v)
 	return &res, err
+}
+
+func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {

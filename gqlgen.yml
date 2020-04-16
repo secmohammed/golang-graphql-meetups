@@ -43,6 +43,15 @@ models:
         resolver: true
       user:
         resolver: true
+  Group:
+    model: github.com/secmohammed/meetups/models.Group
+    fields:
+      user:
+        resolver: true
+      categories:
+        resolver: true
+      members:
+        resolver: true
   Category:
     model: github.com/secmohammed/meetups/models.Category
     fields:
@@ -53,4 +62,4 @@ models:
 resolver:
   filename: graphql/resolvers/resolver.base.go
   type: Resolver
-autobind: []
+autobind: ["github.com/secmohammed/meetups/models"]

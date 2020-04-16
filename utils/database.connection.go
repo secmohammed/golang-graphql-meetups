@@ -11,7 +11,7 @@ import (
 var once sync.Once
 var db *pg.DB
 
-func SetDatabaseConnection() *pg.DB {
+func NewDatabaseConnection() *pg.DB {
     once.Do(func() {
         db = postgres.New(&pg.Options{
             User:     os.Getenv("DATABASE_USERNAME"),

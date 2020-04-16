@@ -5,12 +5,28 @@ enum AttendanceStatus {
   interested
 }
 directive @authentication(auth: Authentication!) on FIELD_DEFINITION
-
+directive @hasRole(role: Role!) on FIELD_DEFINITION
+enum Role {
+  MEMBER
+  ADMIN
+  MODERATOR
+}
 enum Authentication {
   GUEST
   AUTHENTICATED
 }
-
+type UserGroup {
+  user: User!
+  type: String!
+}
+type Group {
+  id: ID!
+  name: String!
+  description: String!
+  user: User!
+  categories: [Category!]!
+  members: [UserGroup!]!
+}
 input CreateConversationInput {
   user_ids: [ID!]!
   message: String!
@@ -78,6 +94,17 @@ input CreateMeetupInput {
   end_date: String!
   description: String!
 }
+input CreateGroupInput {
+  name: String!
+  description: String!
+  categories: [ID!]!
+}
+input UpdateGroupInput {
+  name: String!
+  description: String!
+  categories: [ID!]
+}
+
 input RegisterInput {
   username: String!
   email: String!
@@ -122,6 +149,9 @@ input CreateAttendanceInput {
 type Query {
   comments(meetup_id: ID!): [Comment!]!
 
+  groups: [Group!]!
+  group(id: ID!): Group!
+
   meetups(
     filter: MeetupFilterInput
     limit: Int = 10
@@ -145,8 +175,13 @@ type Query {
   categories(limit: Int = 10, offset: Int = 0): [Category!]!
   category(name: String!): Category!
 }
-
 type Mutation {
+  createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
+  deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED) @hasRole(role: ADMIN)
+
+  updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
+  # we need to make sure that user who does that is actually an admin.
+  assignMemberToGroup(id: ID!, userID: ID!): Group! @authentication(auth: AUTHENTICATED) @hasRole(role: ADMIN)
   createAttendance(input: CreateAttendanceInput!): Attendee!
     @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
