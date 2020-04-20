@@ -24,7 +24,7 @@ func (r *groupResolver) User(ctx context.Context, obj *models.Group) (*models.Us
     return loaders.GetLoaders(ctx).UserByID.Load(obj.UserID)
 }
 func (r *groupResolver) Categories(ctx context.Context, obj *models.Group) ([]*models.Category, error) {
-    return nil, nil
+    return loaders.GetLoaders(ctx).CategoriesByGroup.Load(obj.ID)
 }
 func (r *groupResolver) Members(ctx context.Context, obj *models.Group) ([]*models.UserGroup, error) {
     return loaders.GetLoaders(ctx).MembersByGroup.Load(obj.ID)

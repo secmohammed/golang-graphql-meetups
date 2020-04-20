@@ -18,6 +18,7 @@ type Loaders struct {
     UserByID           *UserLoader
     MeetupsByCategory  *MeetupsLoader
     CategoriesByMeetup *CategoriesLoader
+    CategoriesByGroup  *CategoriesLoader
     MembersByGroup     *MembersLoader
     AttendeesByMeetup  *AttendeesLoader
     MeetupByID         *MeetupLoader
@@ -125,6 +126,26 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                 m := make(map[string]*models.Meetup, len(ids))
                 for _, meetup := range meetups {
                     m[meetup.ID] = meetup
+                }
+                categories := make([][]*models.Category, len(ids))
+                for i, id := range ids {
+                    categories[i] = m[id].Categories
+                }
+                return categories, nil
+            },
+        }
+        loaders.CategoriesByGroup = &CategoriesLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Category, []error) {
+                var groups []*models.Group
+                err := db.Model(&groups).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Categories").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                m := make(map[string]*models.Group, len(ids))
+                for _, group := range groups {
+                    m[group.ID] = group
                 }
                 categories := make([][]*models.Category, len(ids))
                 for i, id := range ids {
