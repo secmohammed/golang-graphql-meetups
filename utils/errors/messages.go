@@ -20,4 +20,6 @@ var (
     ErrUsernameIsntUnique = errors.New("username is already used")
     //ErrCouldntGenerateJWTToken is used to indicate that here was an error while generating the jwt token.
     ErrCouldntGenerateJWTToken = errors.New("failed generating token")
+    //ErrCouldntAssignMemberToGroup is used to show an error message in case of unauthorized attempt while adding user to group.
+    ErrCouldntAssignMemberToGroup = errors.New("couldn't assign user to group, due you aren't allowed to add other members.")
 )

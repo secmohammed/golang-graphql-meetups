@@ -2,6 +2,7 @@ package resolvers
 
 import (
     "context"
+    "fmt"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
@@ -23,8 +24,6 @@ func (m *mutationResolver) CreateGroup(ctx context.Context, input models.CreateG
 }
 func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-    // check if user is an admin of this group.
-    // delete all of the members.
     group, err := m.GroupsRepo.GetByID(id)
     if err != nil || group == nil {
         return false, errors.ErrRecordNotFound
@@ -33,16 +32,31 @@ func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, er
         return false, errors.ErrUnauthenticated
     }
 
-    // err = m.GroupsRepo.Delete(group)
-    // if err != nil {
-    //     return false, fmt.Errorf("error while deleting group: %v", err)
-    // }
+    err = m.GroupsRepo.Delete(group)
+    if err != nil {
+        return false, fmt.Errorf("error while deleting group: %v", err)
+    }
     return true, nil
 
 }
 func (m *mutationResolver) UpdateGroup(ctx context.Context, id string, input models.UpdateGroupInput) (*models.Group, error) {
     return nil, nil
 }
-func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, userID string) (*models.Group, error) {
-    return nil, nil
+func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, userID string, role *string) (*models.Group, error) {
+    // given we have the group id and the user id we want to assign to this group
+    // when the authenticated user has the ability to add others based on
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    group, err := m.GroupsRepo.GetByID(id)
+    if err != nil {
+        return nil, errors.ErrRecordNotFound
+    }
+    // if he is an creator of the group
+    // or currently authenticated user is a secondary admin or a moderator.
+    exists, err := m.GroupsRepo.IsUserSecondaryAdminOfGroup(id, currentUser.ID)
+    if err != nil || (!exists && group.UserID != currentUser.ID) {
+        return nil, errors.ErrCouldntAssignMemberToGroup
+    }
+    // then we can add user to group.
+
+    return m.GroupsRepo.AssignMemberToGroup(group, userID, *role)
 }

@@ -27,9 +27,10 @@ type UserGroup struct {
 
 // GroupUser struct type
 type GroupUser struct {
-    UserID  string
-    GroupID string
-    Type    string
+    tableName struct{} `sql:"group_user"`
+    UserID    string
+    GroupID   string
+    Type      string
 }
 
 // CategoryGroup struct type

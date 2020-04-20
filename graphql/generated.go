@@ -116,7 +116,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AssignMemberToGroup func(childComplexity int, id string, userID string) int
+		AssignMemberToGroup func(childComplexity int, id string, userID string, role *string) int
 		CreateAttendance    func(childComplexity int, input models.CreateAttendanceInput) int
 		CreateCategory      func(childComplexity int, input models.CreateCategoryInput) int
 		CreateComment       func(childComplexity int, input models.CreateCommentInput) int
@@ -207,7 +207,7 @@ type MutationResolver interface {
 	CreateGroup(ctx context.Context, input models.CreateGroupInput) (*models.Group, error)
 	DeleteGroup(ctx context.Context, id string) (bool, error)
 	UpdateGroup(ctx context.Context, id string, input models.UpdateGroupInput) (*models.Group, error)
-	AssignMemberToGroup(ctx context.Context, id string, userID string) (*models.Group, error)
+	AssignMemberToGroup(ctx context.Context, id string, userID string, role *string) (*models.Group, error)
 	CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error)
 	UpdateAttendance(ctx context.Context, id string, status models.AttendanceStatus) (*models.Attendee, error)
 	DeleteAttendance(ctx context.Context, id string) (bool, error)
@@ -527,7 +527,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AssignMemberToGroup(childComplexity, args["id"].(string), args["userID"].(string)), true
+		return e.complexity.Mutation.AssignMemberToGroup(childComplexity, args["id"].(string), args["userID"].(string), args["role"].(*string)), true
 
 	case "Mutation.createAttendance":
 		if e.complexity.Mutation.CreateAttendance == nil {
@@ -1252,7 +1252,7 @@ type Mutation {
 
   updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   # we need to make sure that user who does that is actually an admin.
-  assignMemberToGroup(id: ID!, userID: ID!): Group! @authentication(auth: AUTHENTICATED)
+  assignMemberToGroup(id: ID!, userID: ID!, role: String = "member"): Group! @authentication(auth: AUTHENTICATED)
   createAttendance(input: CreateAttendanceInput!): Attendee!
     @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
@@ -1339,6 +1339,14 @@ func (ec *executionContext) field_Mutation_assignMemberToGroup_args(ctx context.
 		}
 	}
 	args["userID"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["role"]; ok {
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["role"] = arg2
 	return args, nil
 }
 
@@ -3344,7 +3352,7 @@ func (ec *executionContext) _Mutation_assignMemberToGroup(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AssignMemberToGroup(rctx, args["id"].(string), args["userID"].(string))
+			return ec.resolvers.Mutation().AssignMemberToGroup(rctx, args["id"].(string), args["userID"].(string), args["role"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
