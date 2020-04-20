@@ -21,10 +21,13 @@ type User struct {
     LastName   string `json:"last_name"`
     Attendees  []*Attendee
     Categories []*Category `pg:"many2many:category_user"`
+    Groups     []*Group    `pg:"many2many:group_user"`
     Avatar     string      `json:"avatar"`
-    CreatedAt  time.Time   `json:"created_at"`
-    UpdatedAt  time.Time   `json:"updated_at"`
-    DeletedAt  *time.Time  `json:"-" pg:",soft_delete"`
+    Type       string      `sql:"-" json:"-"`
+
+    CreatedAt time.Time  `json:"created_at"`
+    UpdatedAt time.Time  `json:"updated_at"`
+    DeletedAt *time.Time `json:"-" pg:",soft_delete"`
 }
 
 // CategoryUser struct type

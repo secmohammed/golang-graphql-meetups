@@ -64,10 +64,6 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         // or let it pass through
         return next(ctx)
     }
-    c.Directives.HasRole = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, role models.Role) (res interface{}, err error) {
-        fmt.Println(ctx, obj, role)
-        return next(ctx)
-    }
     router.Use(middlewares.AuthMiddleware(userRepo))
 
     queryHandler := handler.GraphQL(

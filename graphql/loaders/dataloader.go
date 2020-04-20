@@ -18,6 +18,7 @@ type Loaders struct {
     UserByID           *UserLoader
     MeetupsByCategory  *MeetupsLoader
     CategoriesByMeetup *CategoriesLoader
+    MembersByGroup     *MembersLoader
     AttendeesByMeetup  *AttendeesLoader
     MeetupByID         *MeetupLoader
     InterestsByUser    *CategoriesLoader
@@ -90,6 +91,28 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                 return meetups, nil
             },
         }
+        loaders.MembersByGroup = &MembersLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.UserGroup, []error) {
+                var groups []*models.Group
+                err := db.Model(&groups).Where("\"group\".\"id\" in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Members").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                c := make(map[string]*models.Group, len(ids))
+                for _, group := range groups {
+                    c[group.ID] = group
+                }
+                members := make([][]*models.UserGroup, len(ids))
+                for i, id := range ids { // group
+                    for _, member := range c[id].Members {
+                        members[i] = append(members[i], &models.UserGroup{User: member, Type: member.Type})
+                    }
+                }
+                return members, nil
+            },
+        }
         loaders.CategoriesByMeetup = &CategoriesLoader{
             wait:     wait,
             maxBatch: 100,
@@ -128,7 +151,7 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                     for _, user := range category.Users {
                         for i, id := range ids {
                             if id == user.ID {
-                                categoriesCollection[i] = append(categoriesCollection[i], category) 
+                                categoriesCollection[i] = append(categoriesCollection[i], category)
                             }
                         }
                     }

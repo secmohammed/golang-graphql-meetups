@@ -1,9 +1,6 @@
 package models
 
 import (
-    "fmt"
-    "io"
-    "strconv"
     "time"
 
     "github.com/go-playground/validator"
@@ -11,15 +8,17 @@ import (
 
 //Group model attributes.
 type Group struct {
-    ID          string     `json:"id"`
-    Name        string     `json:"name"`
-    Description string     `json:"description"`
-    UserID      string     `json:"user_id"`
-    Meetups     []*Meetup  `pg:"many2many:category_meetup,joinFK:meetup_id"`
-    Users       []*User    `pg:"many2many:category_user"`
-    CreatedAt   time.Time  `json:"created_at"`
-    UpdatedAt   time.Time  `json:"updated_at"`
-    DeletedAt   *time.Time `json:"-" pg:",soft_delete"`
+    ID          string `json:"id"`
+    Name        string `json:"name"`
+    Description string `json:"description"`
+    UserID      string `json:"user_id"`
+    User        *User
+    Meetups     []*Meetup   `pg:"many2many:category_meetup,joinFK:meetup_id"`
+    Members     []*User     `pg:"many2many:group_user,joinFK:user_id"`
+    Categories  []*Category `pg:"many2many:category_group"`
+    CreatedAt   time.Time   `json:"created_at"`
+    UpdatedAt   time.Time   `json:"updated_at"`
+    DeletedAt   *time.Time  `json:"-" pg:",soft_delete"`
 }
 type UserGroup struct {
     User *User  `json:"user"`
@@ -30,6 +29,7 @@ type UserGroup struct {
 type GroupUser struct {
     UserID  string
     GroupID string
+    Type    string
 }
 
 // CategoryGroup struct type
@@ -56,47 +56,4 @@ type CreateGroupInput struct {
 func (m *CreateGroupInput) Validate() error {
     validate := validator.New()
     return validate.Struct(m)
-}
-
-type Role string
-
-const (
-    RoleMember    Role = "MEMBER"
-    RoleAdmin     Role = "ADMIN"
-    RoleModerator Role = "MODERATOR"
-)
-
-var AllRole = []Role{
-    RoleMember,
-    RoleAdmin,
-    RoleModerator,
-}
-
-func (e Role) IsValid() bool {
-    switch e {
-    case RoleMember, RoleAdmin, RoleModerator:
-        return true
-    }
-    return false
-}
-
-func (e Role) String() string {
-    return string(e)
-}
-
-func (e *Role) UnmarshalGQL(v interface{}) error {
-    str, ok := v.(string)
-    if !ok {
-        return fmt.Errorf("enums must be strings")
-    }
-
-    *e = Role(str)
-    if !e.IsValid() {
-        return fmt.Errorf("%s is not a valid Role", str)
-    }
-    return nil
-}
-
-func (e Role) MarshalGQL(w io.Writer) {
-    fmt.Fprint(w, strconv.Quote(e.String()))
 }

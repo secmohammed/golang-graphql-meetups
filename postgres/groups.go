@@ -19,6 +19,7 @@ func (g *GroupsRepo) Create(group *models.Group) (*models.Group, error) {
 // GetByID is used to fetch meetup by id.
 func (g *GroupsRepo) GetByID(id string) (*models.Group, error) {
     group := models.Group{}
+    // err := g.DB.Model(&group).Where("\"group\".\"id\" = ?", id).Relation("Members").First()
     err := g.DB.Model(&group).Where("id = ?", id).First()
     if err != nil {
         return nil, err

@@ -2,7 +2,6 @@ package resolvers
 
 import (
     "context"
-    "fmt"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
@@ -24,7 +23,8 @@ func (m *mutationResolver) CreateGroup(ctx context.Context, input models.CreateG
 }
 func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-
+    // check if user is an admin of this group.
+    // delete all of the members.
     group, err := m.GroupsRepo.GetByID(id)
     if err != nil || group == nil {
         return false, errors.ErrRecordNotFound
@@ -33,10 +33,10 @@ func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, er
         return false, errors.ErrUnauthenticated
     }
 
-    err = m.GroupsRepo.Delete(group)
-    if err != nil {
-        return false, fmt.Errorf("error while deleting group: %v", err)
-    }
+    // err = m.GroupsRepo.Delete(group)
+    // if err != nil {
+    //     return false, fmt.Errorf("error while deleting group: %v", err)
+    // }
     return true, nil
 
 }

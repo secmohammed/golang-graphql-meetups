@@ -52,7 +52,6 @@ type ResolverRoot interface {
 
 type DirectiveRoot struct {
 	Authentication func(ctx context.Context, obj interface{}, next graphql.Resolver, auth models.Authentication) (res interface{}, err error)
-	HasRole        func(ctx context.Context, obj interface{}, next graphql.Resolver, role models.Role) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -1083,12 +1082,6 @@ enum AttendanceStatus {
   interested
 }
 directive @authentication(auth: Authentication!) on FIELD_DEFINITION
-directive @hasRole(role: Role!) on FIELD_DEFINITION
-enum Role {
-  MEMBER
-  ADMIN
-  MODERATOR
-}
 enum Authentication {
   GUEST
   AUTHENTICATED
@@ -1255,11 +1248,11 @@ type Query {
 }
 type Mutation {
   createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
-  deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED) @hasRole(role: ADMIN)
+  deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
   updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   # we need to make sure that user who does that is actually an admin.
-  assignMemberToGroup(id: ID!, userID: ID!): Group! @authentication(auth: AUTHENTICATED) @hasRole(role: ADMIN)
+  assignMemberToGroup(id: ID!, userID: ID!): Group! @authentication(auth: AUTHENTICATED)
   createAttendance(input: CreateAttendanceInput!): Attendee!
     @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!
@@ -1324,20 +1317,6 @@ func (ec *executionContext) dir_authentication_args(ctx context.Context, rawArgs
 		}
 	}
 	args["auth"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) dir_hasRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 models.Role
-	if tmp, ok := rawArgs["role"]; ok {
-		arg0, err = ec.unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["role"] = arg0
 	return args, nil
 }
 
@@ -3247,18 +3226,8 @@ func (ec *executionContext) _Mutation_deleteGroup(ctx context.Context, field gra
 			}
 			return ec.directives.Authentication(ctx, nil, directive0, auth)
 		}
-		directive2 := func(ctx context.Context) (interface{}, error) {
-			role, err := ec.unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx, "ADMIN")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.HasRole == nil {
-				return nil, errors.New("directive hasRole is not implemented")
-			}
-			return ec.directives.HasRole(ctx, nil, directive1, role)
-		}
 
-		tmp, err := directive2(rctx)
+		tmp, err := directive1(rctx)
 		if err != nil {
 			return nil, err
 		}
@@ -3387,18 +3356,8 @@ func (ec *executionContext) _Mutation_assignMemberToGroup(ctx context.Context, f
 			}
 			return ec.directives.Authentication(ctx, nil, directive0, auth)
 		}
-		directive2 := func(ctx context.Context) (interface{}, error) {
-			role, err := ec.unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx, "ADMIN")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.HasRole == nil {
-				return nil, errors.New("directive hasRole is not implemented")
-			}
-			return ec.directives.HasRole(ctx, nil, directive1, role)
-		}
 
-		tmp, err := directive2(rctx)
+		tmp, err := directive1(rctx)
 		if err != nil {
 			return nil, err
 		}
@@ -8690,15 +8649,6 @@ func (ec *executionContext) marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetu
 		return graphql.Null
 	}
 	return ec._Meetup(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx context.Context, v interface{}) (models.Role, error) {
-	var res models.Role
-	return res, res.UnmarshalGQL(v)
-}
-
-func (ec *executionContext) marshalNRole2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐRole(ctx context.Context, sel ast.SelectionSet, v models.Role) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
