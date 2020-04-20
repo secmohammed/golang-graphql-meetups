@@ -1,6 +1,8 @@
 package postgres
 
 import (
+    "strconv"
+
     "github.com/go-pg/pg"
     "github.com/go-pg/pg/orm"
     "github.com/secmohammed/meetups/models"
@@ -22,6 +24,18 @@ func (g *GroupsRepo) AssignMemberToGroup(group *models.Group, userID, role strin
         return nil, err
     }
     return group, nil
+}
+
+func (g *GroupsRepo) AttachCategoriesToGroup(categoryIds []string, group *models.Group) error {
+    categories := make([]*models.CategoryGroup, len(categoryIds))
+    for id := range categoryIds {
+        categories = append(categories, &models.CategoryGroup{
+            GroupID:    group.ID,
+            CategoryID: strconv.Itoa(id),
+        })
+    }
+    _, err := g.DB.Model(categories).Insert()
+    return err
 }
 
 //Create is used to create a group using the passed struct.

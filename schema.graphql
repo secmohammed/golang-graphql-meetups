@@ -91,12 +91,12 @@ input CreateMeetupInput {
 input CreateGroupInput {
   name: String!
   description: String!
-  categories: [ID!]!
+  category_ids: [ID!]!
 }
 input UpdateGroupInput {
   name: String!
   description: String!
-  categories: [ID!]
+  category_ids: [ID!]
 }
 
 input RegisterInput {

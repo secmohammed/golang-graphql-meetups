@@ -4,6 +4,7 @@ import (
     "time"
 
     "github.com/go-playground/validator"
+    "github.com/secmohammed/meetups/utils/validation"
 )
 
 //Group model attributes.
@@ -43,18 +44,20 @@ type CategoryGroup struct {
 type UpdateGroupInput struct {
     Name        string   `json:"name" validate:"required,min=3,max=32"`
     Description string   `json:"description" validate:"required,min=3,max=32"`
-    Categories  []string `json:"categories"`
+    CategoryIds []string `json:"category_ids" validate:"required,is_slice,is_string_element"`
 }
 
 //CreateGroupInput is used to validate against the attributes.
 type CreateGroupInput struct {
     Name        string   `json:"name" validate:"required,min=3,max=32"`
     Description string   `json:"description" validate:"required,min=3,max=32"`
-    Categories  []string `json:"categories"`
+    CategoryIds []string `json:"category_ids" validate:"required,is_slice,is_string_element"`
 }
 
 //Validate is used to validate the passed values against the struct validation props.
 func (m *CreateGroupInput) Validate() error {
     validate := validator.New()
+    validate.RegisterValidation("is_slice", validation.IsSlice)
+    validate.RegisterValidation("is_string_element", validation.IsStringElem)
     return validate.Struct(m)
 }

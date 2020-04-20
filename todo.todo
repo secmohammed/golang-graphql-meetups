@@ -11,8 +11,9 @@
  ✔ user needs to add interests based on category. @done (20-03-21 07:04)
  ✔ index events according to users based on interests @done (20-03-21 07:54)
  ≡ Extra Feature: Add the ability for user to share the meetup to other groups and vice versa.
- ≡ Optional: ability to put group under categories.
+ ✔ Optional: ability to put group under categories. @done (20-04-20 06:51)
  ≡ user needs to search for categories using aloglia for fast search in frontend(indexing categories.)
+ ✔ Optional: ability to add members to group only if owner of group, or admin/moderator of group. @done (20-04-20 06:52)
  ≡ Optional: ability for users to create groups that they can post meetups at.
  ≡ Optional: Chat between users(WIP).
  ≡ Optional: notifications.

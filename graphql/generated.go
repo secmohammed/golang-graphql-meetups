@@ -1168,12 +1168,12 @@ input CreateMeetupInput {
 input CreateGroupInput {
   name: String!
   description: String!
-  categories: [ID!]!
+  category_ids: [ID!]!
 }
 input UpdateGroupInput {
   name: String!
   description: String!
-  categories: [ID!]
+  category_ids: [ID!]
 }
 
 input RegisterInput {
@@ -6737,9 +6737,9 @@ func (ec *executionContext) unmarshalInputCreateGroupInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
-		case "categories":
+		case "category_ids":
 			var err error
-			it.Categories, err = ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+			it.CategoryIds, err = ec.unmarshalNID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6959,9 +6959,9 @@ func (ec *executionContext) unmarshalInputUpdateGroupInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
-		case "categories":
+		case "category_ids":
 			var err error
-			it.Categories, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			it.CategoryIds, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}

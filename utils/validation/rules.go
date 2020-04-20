@@ -1,6 +1,7 @@
 package validation
 
 import (
+    "fmt"
     "reflect"
 
     "github.com/go-playground/validator"
@@ -8,7 +9,7 @@ import (
 
 //IsSlice check if field kind is equal to slice
 func IsSlice(fl validator.FieldLevel) bool {
-    if fl.Top().Kind() == reflect.Slice {
+    if fl.Field().Kind() == reflect.Slice {
         return true
     }
     return false
@@ -16,9 +17,12 @@ func IsSlice(fl validator.FieldLevel) bool {
 
 //IsStringElem check if field element kind is equal to string
 func IsStringElem(fl validator.FieldLevel) bool {
-    t := fl.Top().Type()
-    if t.Elem().Kind() == reflect.String {
-        return true
+    fmt.Println(reflect.TypeOf(fl.Field()), ">>>")
+    fmt.Println(fl.Top().Type().Elem().Kind(), fl.StructFieldName(), fl.Field().Cap())
+    for i := 0; i < fl.Field().Cap(); i++ {
+        if reflect.TypeOf(fl.Field().Index(i).Interface().(string)).Kind() != reflect.String {
+            return false
+        }
     }
-    return false
+    return true
 }

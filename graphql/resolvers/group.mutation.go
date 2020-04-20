@@ -20,7 +20,13 @@ func (m *mutationResolver) CreateGroup(ctx context.Context, input models.CreateG
         UserID:      currentUser.ID,
     }
     // TODO: attach user_id to group_id, attach categories_ids to group_id
-    return m.GroupsRepo.Create(group)
+
+    group, err := m.GroupsRepo.Create(group)
+    if err != nil {
+        return nil, err
+    }
+    m.GroupsRepo.AttachCategoriesToGroup(input.CategoryIds, group)
+    return group, nil
 }
 func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)

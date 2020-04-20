@@ -30,6 +30,8 @@ type CreateConversationInput struct {
 type CreateMessageInput struct {
     Message string `json:"message" validate:"required,min=3,max=100"`
 }
+
+//ConversationUser intermediate table.
 type ConversationUser struct {
     tableName      struct{} `sql:"conversation_user"`
     UserID         string   `json:"user_id"`

@@ -2,6 +2,7 @@ package resolvers
 
 import (
     "context"
+    "fmt"
     "time"
 
     "github.com/secmohammed/meetups/middlewares"
@@ -14,28 +15,17 @@ func (c *mutationResolver) CreateConversation(ctx context.Context, input models.
         return nil, err
     }
     // create the first message with authenticated user.
-    newConversation := &models.Conversation{
+    conversation := &models.Conversation{
         UserID:  currentUser.ID,
         Message: input.Message,
     }
-    conversation, err := c.ConversationsRepo.Create(newConversation)
+    conversation, err := c.ConversationsRepo.Create(conversation)
     if err != nil {
         return nil, err
     }
-    conversationUsers := []*models.ConversationUser{}
-    users := []*models.User{}
-    // prepare to insert to the conversation_user table, and prepare the user ids to find with.
-    for _, id := range input.UserIds {
-        conversationUsers = append(conversationUsers, &models.ConversationUser{
-            UserID:         id,
-            ConversationID: conversation.ID,
-        })
-        users = append(users, &models.User{ID: id})
-    }
-    //TODO:  take the ids of users and check against their existence
-
     // then insert them at conversation_user table
-    if _, err = c.ConversationsRepo.CreateConversationUsers(conversationUsers); err != nil {
+    if err = c.ConversationsRepo.CreateConversationUsers(input.UserIds, conversation); err != nil {
+        fmt.Println("here")
         return nil, err
     }
     // return the conversation.
