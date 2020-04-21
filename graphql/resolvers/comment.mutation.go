@@ -32,7 +32,14 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
             return nil, errors.ErrRecordNotFound
         }
         comment.ParentID = input.ParentID
+    }
+    if input.GroupID != "" {
+        _, err := c.GroupsRepo.GetByID(input.GroupID)
+        if err != nil {
+            return nil, errors.ErrRecordNotFound
+        }
 
+        comment.GroupID = input.GroupID
     }
 
     return c.CommentsRepo.Create(comment)
@@ -50,14 +57,6 @@ func (c *mutationResolver) UpdateComment(ctx context.Context, id string, input m
     }
     if err := input.Validate(); err != nil {
         return nil, err
-    }
-    if input.ParentID != "" {
-        _, err := c.CommentsRepo.GetByID(input.ParentID)
-        if err != nil {
-            return nil, errors.ErrRecordNotFound
-        }
-        comment.ParentID = input.ParentID
-
     }
 
     comment.Body = input.Body

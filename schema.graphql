@@ -124,7 +124,6 @@ input UpdateMeetupInput {
 }
 input UpdateCommentInput {
   body: String!
-  parent_id: String
 }
 input LoginInput {
   email: String!

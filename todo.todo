@@ -15,7 +15,7 @@
  ≡ user needs to search for categories using aloglia for fast search in frontend(indexing categories.)
  ✔ Optional: ability to add members to group only if owner of group, or admin/moderator of group. @done (20-04-20 06:52)
  ✔ Optional: ability for users to create groups that they can post meetups at. @done (20-04-21 03:08)
-  ≡ Extra Feature: Enable users to comment/reply on the shared meetup on a group.
+  ✔ Extra Feature: Enable users to comment/reply on the shared meetup on a group. @done (20-04-21 04:32)
  ✔ Optional: ability to create meetup posts at groups. (encapsulates the meetup creation + associate to group_meetup) @done (20-04-21 04:08)
  ≡ Optional: Chat between users(WIP).
  ≡ Optional: notifications.
@@ -24,5 +24,6 @@
  ≡ Test: Share/Removing shared meetup from groups.
  ≡ Test: adding meetup posts at group
  ≡ Test: Update Group!
+ ≡ Test: Create Comment for meetup that's on group.
  ≡ Optional: implement GraphQL Federation.
  ✔ Refactor middlewares to custom directive schema. @done (20-03-22 07:31)
