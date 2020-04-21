@@ -16,6 +16,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/prprprus/scheduler v0.5.0
 	github.com/rs/cors v1.7.0
 	github.com/urfave/cli v1.20.0 // indirect
 	github.com/vektah/gqlparser v1.2.0

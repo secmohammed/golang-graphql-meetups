@@ -2,7 +2,6 @@ package resolvers
 
 import (
     "context"
-    "fmt"
     "time"
 
     "github.com/secmohammed/meetups/middlewares"
@@ -25,7 +24,6 @@ func (c *mutationResolver) CreateConversation(ctx context.Context, input models.
     }
     // then insert them at conversation_user table
     if err = c.ConversationsRepo.CreateConversationUsers(input.UserIds, conversation); err != nil {
-        fmt.Println("here")
         return nil, err
     }
     // return the conversation.
