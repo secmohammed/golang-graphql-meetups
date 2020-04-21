@@ -20,6 +20,7 @@ type Group {
   user: User!
   categories: [Category!]!
   members: [UserGroup!]!
+  meetups: [Meetup!]!
 }
 input CreateConversationInput {
   user_ids: [ID!]!

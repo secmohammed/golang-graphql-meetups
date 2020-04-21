@@ -17,6 +17,7 @@ const userloaderKey = utils.ContextKey("userloader")
 type Loaders struct {
     UserByID           *UserLoader
     MeetupsByCategory  *MeetupsLoader
+    MeetupsByGroup     *MeetupsLoader
     CategoriesByMeetup *CategoriesLoader
     CategoriesByGroup  *CategoriesLoader
     MembersByGroup     *MembersLoader
@@ -84,6 +85,26 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                 c := make(map[string]*models.Category, len(ids))
                 for _, category := range categories {
                     c[category.ID] = category
+                }
+                meetups := make([][]*models.Meetup, len(ids))
+                for i, id := range ids {
+                    meetups[i] = c[id].Meetups
+                }
+                return meetups, nil
+            },
+        }
+        loaders.MeetupsByGroup = &MeetupsLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Meetup, []error) {
+                var groups []*models.Group
+                err := db.Model(&groups).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Meetups").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                c := make(map[string]*models.Group, len(ids))
+                for _, group := range groups {
+                    c[group.ID] = group
                 }
                 meetups := make([][]*models.Meetup, len(ids))
                 for i, id := range ids {

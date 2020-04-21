@@ -14,7 +14,7 @@ type Group struct {
     Description string `json:"description"`
     UserID      string `json:"user_id"`
     User        *User
-    Meetups     []*Meetup   `pg:"many2many:category_meetup,joinFK:meetup_id"`
+    Meetups     []*Meetup   `pg:"many2many:group_meetup,joinFK:meetup_id"`
     Members     []*User     `pg:"many2many:group_user,joinFK:user_id"`
     Categories  []*Category `pg:"many2many:category_group"`
     CreatedAt   time.Time   `json:"created_at"`
@@ -38,6 +38,10 @@ type GroupUser struct {
 type CategoryGroup struct {
     CategoryID string
     GroupID    string
+}
+type MeetupGroup struct {
+    GroupID  string
+    MeetupID string
 }
 
 //UpdateGroupInput is used to validate against the attributes.

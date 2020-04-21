@@ -13,6 +13,14 @@ type GroupsRepo struct {
     DB *pg.DB
 }
 
+func (g *GroupsRepo) AttachMeetupToGroup(group *models.Group, meetup *models.Meetup) error {
+    meetupGroup := models.MeetupGroup{
+        MeetupID: meetup.ID,
+        GroupID:  group.ID,
+    }
+    _, err := g.DB.Model(&meetupGroup).Insert()
+    return err
+}
 func (g *GroupsRepo) AssignMemberToGroup(group *models.Group, userID, role string) (*models.Group, error) {
     groupUser := models.GroupUser{
         GroupID: group.ID,

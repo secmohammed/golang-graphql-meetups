@@ -100,6 +100,7 @@ type ComplexityRoot struct {
 		Categories  func(childComplexity int) int
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
+		Meetups     func(childComplexity int) int
 		Members     func(childComplexity int) int
 		Name        func(childComplexity int) int
 		User        func(childComplexity int) int
@@ -196,6 +197,7 @@ type GroupResolver interface {
 	User(ctx context.Context, obj *models.Group) (*models.User, error)
 	Categories(ctx context.Context, obj *models.Group) ([]*models.Category, error)
 	Members(ctx context.Context, obj *models.Group) ([]*models.UserGroup, error)
+	Meetups(ctx context.Context, obj *models.Group) ([]*models.Meetup, error)
 }
 type MeetupResolver interface {
 	User(ctx context.Context, obj *models.Meetup) (*models.User, error)
@@ -446,6 +448,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.ID(childComplexity), true
+
+	case "Group.meetups":
+		if e.complexity.Group.Meetups == nil {
+			break
+		}
+
+		return e.complexity.Group.Meetups(childComplexity), true
 
 	case "Group.members":
 		if e.complexity.Group.Members == nil {
@@ -1097,6 +1106,7 @@ type Group {
   user: User!
   categories: [Category!]!
   members: [UserGroup!]!
+  meetups: [Meetup!]!
 }
 input CreateConversationInput {
   user_ids: [ID!]!
@@ -2892,6 +2902,40 @@ func (ec *executionContext) _Group_members(ctx context.Context, field graphql.Co
 	res := resTmp.([]*models.UserGroup)
 	fc.Result = res
 	return ec.marshalNUserGroup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUserGroupᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Group_meetups(ctx context.Context, field graphql.CollectedField, obj *models.Group) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Group",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Group().Meetups(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Meetup)
+	fc.Result = res
+	return ec.marshalNMeetup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Meetup_id(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
@@ -7388,6 +7432,20 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Group_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "meetups":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Group_meetups(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
