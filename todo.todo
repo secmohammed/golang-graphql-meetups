@@ -17,6 +17,7 @@
  ≡ Optional: ability for users to create groups that they can post meetups at.
  ≡ Optional: Chat between users(WIP).
  ≡ Optional: notifications.
- ≡ Optional: schedule reminders for upcoming events.
+ ✔ Test: Optional: schedule reminders for upcoming events. @done (20-04-21 02:55)
+ ≡ Test: Update Group!
  ≡ Optional: implement GraphQL Federation.
  ✔ Refactor middlewares to custom directive schema. @done (20-03-22 07:31)
