@@ -49,13 +49,21 @@ type UpdateGroupInput struct {
 
 //CreateGroupInput is used to validate against the attributes.
 type CreateGroupInput struct {
-    Name        string   `json:"name" validate:"required,min=3,max=32"`
-    Description string   `json:"description" validate:"required,min=3,max=32"`
-    CategoryIds []string `json:"category_ids" validate:"required,is_slice,is_string_element"`
+    Name        string   `json:"name" validate:"omitempty,min=3,max=32"`
+    Description string   `json:"description" validate:"omitempty,min=3,max=32"`
+    CategoryIds []string `json:"category_ids" validate:"omitempty,is_slice,is_string_element"`
 }
 
 //Validate is used to validate the passed values against the struct validation props.
 func (m *CreateGroupInput) Validate() error {
+    validate := validator.New()
+    validate.RegisterValidation("is_slice", validation.IsSlice)
+    validate.RegisterValidation("is_string_element", validation.IsStringElem)
+    return validate.Struct(m)
+}
+
+//Validate is used to validate the passed values against the struct validation props.
+func (m *UpdateGroupInput) Validate() error {
     validate := validator.New()
     validate.RegisterValidation("is_slice", validation.IsSlice)
     validate.RegisterValidation("is_string_element", validation.IsStringElem)

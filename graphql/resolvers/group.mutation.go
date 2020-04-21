@@ -46,7 +46,30 @@ func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, er
 
 }
 func (m *mutationResolver) UpdateGroup(ctx context.Context, id string, input models.UpdateGroupInput) (*models.Group, error) {
-    return nil, nil
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    if err := input.Validate(); err != nil {
+        return nil, err
+    }
+    group, err := m.GroupsRepo.GetByID(id)
+    if err != nil {
+        return nil, errors.ErrRecordNotFound
+    }
+    // if he is an creator of the group
+    // or currently authenticated user is a secondary admin or a moderator.
+    exists, err := m.GroupsRepo.IsUserSecondaryAdminOfGroup(id, currentUser.ID)
+    if err != nil || (!exists && group.UserID != currentUser.ID) {
+        return nil, errors.ErrCouldntAssignMemberToGroup
+    }
+    if input.Name != "" {
+        group.Name = input.Name
+    }
+    if input.Description != "" {
+        group.Description = input.Description
+    }
+    if len(input.CategoryIds) != 0 {
+        m.GroupsRepo.SyncCategoriesWithGroup(input.CategoryIds, group)
+    }
+    return m.GroupsRepo.Update(group)
 }
 func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, userID string, role *string) (*models.Group, error) {
     // given we have the group id and the user id we want to assign to this group

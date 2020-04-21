@@ -26,6 +26,15 @@ func (g *GroupsRepo) AssignMemberToGroup(group *models.Group, userID, role strin
     return group, nil
 }
 
+func (g *GroupsRepo) SyncCategoriesWithGroup(categoryIds []string, group *models.Group) error {
+    var categoryGroup *models.CategoryGroup
+    _, err := g.DB.Model(categoryGroup).Where("group_id = ?", group.ID).Delete()
+    if err != nil {
+        return err
+    }
+    return g.AttachCategoriesToGroup(categoryIds, group)
+
+}
 func (g *GroupsRepo) AttachCategoriesToGroup(categoryIds []string, group *models.Group) error {
     categories := make([]*models.CategoryGroup, len(categoryIds))
     for id := range categoryIds {
