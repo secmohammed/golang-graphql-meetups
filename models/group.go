@@ -36,19 +36,22 @@ type GroupUser struct {
 
 // CategoryGroup struct type
 type CategoryGroup struct {
+    tableName struct{} `sql:"category_group"`
+
     CategoryID string
     GroupID    string
 }
 type MeetupGroup struct {
-    GroupID  string
-    MeetupID string
+    tableName struct{} `sql:"group_meetup"`
+    GroupID   string
+    MeetupID  string
 }
 
 //UpdateGroupInput is used to validate against the attributes.
 type UpdateGroupInput struct {
     Name        string   `json:"name" validate:"required,min=3,max=32"`
     Description string   `json:"description" validate:"required,min=3,max=32"`
-    CategoryIds []string `json:"category_ids" validate:"required,is_slice,is_string_element"`
+    CategoryIds []string `json:"category_ids" validate:"omitempty,is_slice,is_string_element"`
 }
 
 //CreateGroupInput is used to validate against the attributes.

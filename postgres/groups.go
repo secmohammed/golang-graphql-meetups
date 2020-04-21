@@ -1,8 +1,6 @@
 package postgres
 
 import (
-    "strconv"
-
     "github.com/go-pg/pg"
     "github.com/go-pg/pg/orm"
     "github.com/secmohammed/meetups/models"
@@ -18,7 +16,7 @@ func (g *GroupsRepo) DetachMeetupFromGroup(groupID, meetupID string) error {
         MeetupID: meetupID,
         GroupID:  groupID,
     }
-    _, err := g.DB.Model(meetupGroup).Delete()
+    _, err := g.DB.Model(&meetupGroup).Where("meetup_id = ?", meetupID).Where("group_id = ?", groupID).Delete()
     return err
 
 }
@@ -44,8 +42,10 @@ func (g *GroupsRepo) AssignMemberToGroup(group *models.Group, userID, role strin
 }
 
 func (g *GroupsRepo) SyncCategoriesWithGroup(categoryIds []string, group *models.Group) error {
-    var categoryGroup *models.CategoryGroup
-    _, err := g.DB.Model(categoryGroup).Where("group_id = ?", group.ID).Delete()
+    categoryGroup := models.CategoryGroup{
+        GroupID: group.ID,
+    }
+    _, err := g.DB.Model(&categoryGroup).Where("group_id = ?", group.ID).Delete()
     if err != nil {
         return err
     }
@@ -53,14 +53,16 @@ func (g *GroupsRepo) SyncCategoriesWithGroup(categoryIds []string, group *models
 
 }
 func (g *GroupsRepo) AttachCategoriesToGroup(categoryIds []string, group *models.Group) error {
-    categories := make([]*models.CategoryGroup, len(categoryIds))
-    for id := range categoryIds {
-        categories = append(categories, &models.CategoryGroup{
+    categories := make([]models.CategoryGroup, len(categoryIds))
+    for i := 0; i < len(categoryIds); i++ {
+        categories = append(categories, models.CategoryGroup{
             GroupID:    group.ID,
-            CategoryID: strconv.Itoa(id),
+            CategoryID: categoryIds[i],
         })
+
     }
-    _, err := g.DB.Model(categories).Insert()
+
+    _, err := g.DB.Model(&categories).Insert()
     return err
 }
 

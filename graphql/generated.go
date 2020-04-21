@@ -117,28 +117,30 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AssignMemberToGroup func(childComplexity int, id string, userID string, role *string) int
-		CreateAttendance    func(childComplexity int, input models.CreateAttendanceInput) int
-		CreateCategory      func(childComplexity int, input models.CreateCategoryInput) int
-		CreateComment       func(childComplexity int, input models.CreateCommentInput) int
-		CreateConversation  func(childComplexity int, input models.CreateConversationInput) int
-		CreateGroup         func(childComplexity int, input models.CreateGroupInput) int
-		CreateInterest      func(childComplexity int, categoryID string) int
-		CreateMeetup        func(childComplexity int, input models.CreateMeetupInput) int
-		CreateMessage       func(childComplexity int, conversationID string, input models.CreateMessageInput) int
-		DeleteAttendance    func(childComplexity int, id string) int
-		DeleteCategory      func(childComplexity int, name string) int
-		DeleteComment       func(childComplexity int, id string) int
-		DeleteGroup         func(childComplexity int, id string) int
-		DeleteInterest      func(childComplexity int, categoryID string) int
-		DeleteMeetup        func(childComplexity int, id string) int
-		Login               func(childComplexity int, input *models.LoginInput) int
-		Register            func(childComplexity int, input *models.RegisterInput) int
-		UpdateAttendance    func(childComplexity int, id string, status models.AttendanceStatus) int
-		UpdateCategory      func(childComplexity int, name string, input *models.CreateCategoryInput) int
-		UpdateComment       func(childComplexity int, id string, input models.UpdateCommentInput) int
-		UpdateGroup         func(childComplexity int, id string, input models.UpdateGroupInput) int
-		UpdateMeetup        func(childComplexity int, id string, input models.UpdateMeetupInput) int
+		AssignMemberToGroup   func(childComplexity int, id string, userID string, role *string) int
+		CreateAttendance      func(childComplexity int, input models.CreateAttendanceInput) int
+		CreateCategory        func(childComplexity int, input models.CreateCategoryInput) int
+		CreateComment         func(childComplexity int, input models.CreateCommentInput) int
+		CreateConversation    func(childComplexity int, input models.CreateConversationInput) int
+		CreateGroup           func(childComplexity int, input models.CreateGroupInput) int
+		CreateInterest        func(childComplexity int, categoryID string) int
+		CreateMeetup          func(childComplexity int, input models.CreateMeetupInput) int
+		CreateMessage         func(childComplexity int, conversationID string, input models.CreateMessageInput) int
+		DeleteAttendance      func(childComplexity int, id string) int
+		DeleteCategory        func(childComplexity int, name string) int
+		DeleteComment         func(childComplexity int, id string) int
+		DeleteGroup           func(childComplexity int, id string) int
+		DeleteInterest        func(childComplexity int, categoryID string) int
+		DeleteMeetup          func(childComplexity int, id string) int
+		DeleteMeetupFromGroup func(childComplexity int, meetupID string, groupID string) int
+		Login                 func(childComplexity int, input *models.LoginInput) int
+		Register              func(childComplexity int, input *models.RegisterInput) int
+		ShareMeetupToGroup    func(childComplexity int, meetupID string, groupID string) int
+		UpdateAttendance      func(childComplexity int, id string, status models.AttendanceStatus) int
+		UpdateCategory        func(childComplexity int, name string, input *models.CreateCategoryInput) int
+		UpdateComment         func(childComplexity int, id string, input models.UpdateCommentInput) int
+		UpdateGroup           func(childComplexity int, id string, input models.UpdateGroupInput) int
+		UpdateMeetup          func(childComplexity int, id string, input models.UpdateMeetupInput) int
 	}
 
 	Query struct {
@@ -206,6 +208,8 @@ type MeetupResolver interface {
 	Attendees(ctx context.Context, obj *models.Meetup) ([]*models.Attendee, error)
 }
 type MutationResolver interface {
+	ShareMeetupToGroup(ctx context.Context, meetupID string, groupID string) (bool, error)
+	DeleteMeetupFromGroup(ctx context.Context, meetupID string, groupID string) (bool, error)
 	CreateGroup(ctx context.Context, input models.CreateGroupInput) (*models.Group, error)
 	DeleteGroup(ctx context.Context, id string) (bool, error)
 	UpdateGroup(ctx context.Context, id string, input models.UpdateGroupInput) (*models.Group, error)
@@ -706,6 +710,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteMeetup(childComplexity, args["id"].(string)), true
 
+	case "Mutation.deleteMeetupFromGroup":
+		if e.complexity.Mutation.DeleteMeetupFromGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteMeetupFromGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteMeetupFromGroup(childComplexity, args["meetup_id"].(string), args["group_id"].(string)), true
+
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -729,6 +745,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Register(childComplexity, args["input"].(*models.RegisterInput)), true
+
+	case "Mutation.shareMeetupToGroup":
+		if e.complexity.Mutation.ShareMeetupToGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_shareMeetupToGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ShareMeetupToGroup(childComplexity, args["meetup_id"].(string), args["group_id"].(string)), true
 
 	case "Mutation.updateAttendance":
 		if e.complexity.Mutation.UpdateAttendance == nil {
@@ -1174,6 +1202,7 @@ input CreateMeetupInput {
   start_date: String!
   end_date: String!
   description: String!
+  group_id: String
 }
 input CreateGroupInput {
   name: String!
@@ -1209,7 +1238,6 @@ input UpdateMeetupInput {
 }
 input UpdateCommentInput {
   body: String!
-  parent_id: String
 }
 input LoginInput {
   email: String!
@@ -1219,6 +1247,7 @@ input CreateCommentInput {
   body: String!
   meetup_id: ID!
   parent_id: String
+  group_id: String
 }
 input CreateCategoryInput {
   name: String!
@@ -1257,6 +1286,9 @@ type Query {
   category(name: String!): Category!
 }
 type Mutation {
+  shareMeetupToGroup(meetup_id: ID!, group_id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
+  deleteMeetupFromGroup(meetup_id: ID!, group_id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
+
   createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
@@ -1550,6 +1582,28 @@ func (ec *executionContext) field_Mutation_deleteInterest_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteMeetupFromGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["meetup_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["meetup_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["group_id"]; ok {
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["group_id"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteMeetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1589,6 +1643,28 @@ func (ec *executionContext) field_Mutation_register_args(ctx context.Context, ra
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_shareMeetupToGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["meetup_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["meetup_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["group_id"]; ok {
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["group_id"] = arg1
 	return args, nil
 }
 
@@ -3174,6 +3250,136 @@ func (ec *executionContext) _Meetup_attendees(ctx context.Context, field graphql
 	res := resTmp.([]*models.Attendee)
 	fc.Result = res
 	return ec.marshalNAttendee2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendeeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_shareMeetupToGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_shareMeetupToGroup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ShareMeetupToGroup(rctx, args["meetup_id"].(string), args["group_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteMeetupFromGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteMeetupFromGroup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeleteMeetupFromGroup(rctx, args["meetup_id"].(string), args["group_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6733,6 +6939,12 @@ func (ec *executionContext) unmarshalInputCreateCommentInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "group_id":
+			var err error
+			it.GroupID, err = ec.unmarshalOString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -6820,6 +7032,12 @@ func (ec *executionContext) unmarshalInputCreateMeetupInput(ctx context.Context,
 		case "description":
 			var err error
 			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "group_id":
+			var err error
+			it.GroupID, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6970,12 +7188,6 @@ func (ec *executionContext) unmarshalInputUpdateCommentInput(ctx context.Context
 		case "body":
 			var err error
 			it.Body, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "parent_id":
-			var err error
-			it.ParentID, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7570,6 +7782,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "shareMeetupToGroup":
+			out.Values[i] = ec._Mutation_shareMeetupToGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteMeetupFromGroup":
+			out.Values[i] = ec._Mutation_deleteMeetupFromGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createGroup":
 			out.Values[i] = ec._Mutation_createGroup(ctx, field)
 			if out.Values[i] == graphql.Null {

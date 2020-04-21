@@ -23,14 +23,12 @@ func (a *mutationResolver) CreateAttendance(ctx context.Context, input models.Cr
         UserID:   currentUser.ID,
     }
     s, err := scheduler.NewScheduler(1000)
-    parsed, err := time.Parse(time.RFC3339, meetup.StartDate)
+    parsed, err := time.Parse("2006-01-02 15:04:05+02", meetup.StartDate)
     if err != nil {
         return nil, err
     }
-    delay := parsed.Hour() - 1
-    delayedTimeInSeconds := int(parsed.Add(time.Duration(-delay) * time.Hour).Unix())
+    delayedTimeInSeconds := int(parsed.Add(time.Duration(-1) * time.Hour).Unix())
     s.Delay().Second(delayedTimeInSeconds).Do(mails.SendReminderEmailToAttendee, currentUser, meetup)
-
     return a.AttendeesRepo.Create(attendee)
 }
 func (a *mutationResolver) DeleteAttendance(ctx context.Context, id string) (bool, error) {

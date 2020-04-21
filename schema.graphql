@@ -133,6 +133,7 @@ input CreateCommentInput {
   body: String!
   meetup_id: ID!
   parent_id: String
+  group_id: String
 }
 input CreateCategoryInput {
   name: String!

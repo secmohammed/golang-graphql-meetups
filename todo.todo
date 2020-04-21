@@ -20,10 +20,10 @@
  ≡ Optional: Chat between users(WIP).
  ≡ Optional: notifications.
  ✔ Optional: schedule reminders for upcoming events. @done (20-04-21 04:08)
- ≡ Test: Schedule reminder for attendance!
- ≡ Test: Share/Removing shared meetup from groups.
- ≡ Test: adding meetup posts at group
- ≡ Test: Update Group!
- ≡ Test: Create Comment for meetup that's on group.
+ ✔ Test: Schedule reminder for attendance! @done (20-04-21 11:54)
+ ✔ Test: Share/Removing shared meetup from groups. @done (20-04-21 08:37)
+ ✔ Test: adding meetup posts at group @done (20-04-21 11:15)
+ ✔ Test: Update Group! @done (20-04-21 11:15)
+ ✔ Test: Create Comment for meetup that's on group. @done (20-04-21 08:43)
  ≡ Optional: implement GraphQL Federation.
  ✔ Refactor middlewares to custom directive schema. @done (20-03-22 07:31)
