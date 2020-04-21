@@ -88,6 +88,7 @@ input CreateMeetupInput {
   start_date: String!
   end_date: String!
   description: String!
+  group_id: String
 }
 input CreateGroupInput {
   name: String!
@@ -171,6 +172,9 @@ type Query {
   category(name: String!): Category!
 }
 type Mutation {
+  shareMeetupToGroup(meetup_id: ID!, group_id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
+  deleteMeetupFromGroup(meetup_id: ID!, group_id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
+
   createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 

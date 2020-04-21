@@ -71,6 +71,41 @@ func (m *mutationResolver) UpdateGroup(ctx context.Context, id string, input mod
     }
     return m.GroupsRepo.Update(group)
 }
+func (m *mutationResolver) DeleteMeetupFromGroup(ctx context.Context, meetupID string, groupID string) (bool, error) {
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    group, err := m.GroupsRepo.GetByID(groupID)
+    if err != nil {
+        return false, errors.ErrRecordNotFound
+    }
+    // if he is an creator of the group
+    // or currently authenticated user is a secondary admin or a moderator.
+    exists, err := m.GroupsRepo.IsUserSecondaryAdminOfGroup(groupID, currentUser.ID)
+    if err != nil || (!exists && group.UserID != currentUser.ID) {
+        return false, errors.ErrCouldntAssignMemberToGroup
+    }
+
+    return true, m.GroupsRepo.DetachMeetupFromGroup(groupID, meetupID)
+
+}
+func (m *mutationResolver) ShareMeetupToGroup(ctx context.Context, meetupID string, groupID string) (bool, error) {
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    group, err := m.GroupsRepo.GetByID(groupID)
+    if err != nil {
+        return false, errors.ErrRecordNotFound
+    }
+    // make sure that the current authenticated user is member/owner of the group.
+    exists, err := m.GroupsRepo.IsUserMemberOfGroup(groupID, currentUser.ID)
+    if err != nil || (!exists && group.UserID != currentUser.ID) {
+        return false, errors.ErrCouldntAssignMemberToGroup
+    }
+
+    meetup, err := m.MeetupsRepo.GetByID(meetupID)
+
+    if err != nil {
+        return false, errors.ErrRecordNotFound
+    }
+    return true, m.GroupsRepo.AttachMeetupToGroup(group, meetup)
+}
 func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, userID string, role *string) (*models.Group, error) {
     // given we have the group id and the user id we want to assign to this group
     // when the authenticated user has the ability to add others based on

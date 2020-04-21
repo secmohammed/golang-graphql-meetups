@@ -29,6 +29,7 @@ type CreateMeetupInput struct {
     StartDate   string `json:"start_date" validate:"required"`
     EndDate     string `json:"end_date" validate:"requireed"`
     Location    string `json:"location" validate:"required,min=3,max=100"`
+    GroupID     string `json:"group_id" validate:"omitempty"`
 }
 
 //UpdateMeetupInput is used to validate the attributes with the following criteria.

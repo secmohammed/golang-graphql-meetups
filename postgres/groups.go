@@ -13,6 +13,15 @@ type GroupsRepo struct {
     DB *pg.DB
 }
 
+func (g *GroupsRepo) DetachMeetupFromGroup(groupID, meetupID string) error {
+    meetupGroup := models.MeetupGroup{
+        MeetupID: meetupID,
+        GroupID:  groupID,
+    }
+    _, err := g.DB.Model(meetupGroup).Delete()
+    return err
+
+}
 func (g *GroupsRepo) AttachMeetupToGroup(group *models.Group, meetup *models.Meetup) error {
     meetupGroup := models.MeetupGroup{
         MeetupID: meetup.ID,
@@ -59,6 +68,18 @@ func (g *GroupsRepo) AttachCategoriesToGroup(categoryIds []string, group *models
 func (g *GroupsRepo) Create(group *models.Group) (*models.Group, error) {
     _, err := g.DB.Model(group).Returning("*").Insert()
     return group, err
+}
+func (g *GroupsRepo) IsUserMemberOfGroup(id, authenticated_user_id string) (bool, error) {
+    group := models.Group{}
+    err := g.DB.Model(&group).Where("\"group\".\"id\" = ?", id).Relation("Members", func(q *orm.Query) (*orm.Query, error) {
+        return q.Where("group_user.user_id = ?", authenticated_user_id), nil
+    }).First()
+    boolValue := !(len(group.Members) == 0)
+    if err != nil {
+        return boolValue, err
+    }
+    return boolValue, nil
+
 }
 func (g *GroupsRepo) IsUserSecondaryAdminOfGroup(id, authenticated_user_id string) (bool, error) {
     group := models.Group{}

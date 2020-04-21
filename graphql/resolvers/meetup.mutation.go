@@ -68,6 +68,13 @@ func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.Create
         Location:    input.Location,
         UserID:      currentUser.ID,
     }
-
-    return m.MeetupsRepo.Create(meetup)
+    meetup, err := m.MeetupsRepo.Create(meetup)
+    if input.GroupID != "" {
+        group, err := m.GroupsRepo.GetByID(input.GroupID)
+        if err != nil {
+            return nil, err
+        }
+        m.GroupsRepo.AttachMeetupToGroup(group, meetup)
+    }
+    return meetup, err
 }
