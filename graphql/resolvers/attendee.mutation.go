@@ -2,20 +2,20 @@ package resolvers
 
 import (
     "context"
-    "errors"
     "time"
 
     "github.com/prprprus/scheduler"
     "github.com/secmohammed/meetups/mails"
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 func (a *mutationResolver) CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     meetup, err := a.MeetupsRepo.GetByID(input.MeetupID)
     if err != nil {
-        return nil, errors.New("meetup doens't exist")
+        return nil, errors.ErrRecordNotFound
     }
     attendee := &models.Attendee{
         Status:   input.Status.String(),
@@ -36,10 +36,10 @@ func (a *mutationResolver) DeleteAttendance(ctx context.Context, id string) (boo
 
     attendee, err := a.AttendeesRepo.GetByID(id)
     if err != nil {
-        return false, errors.New("Couldn't find this attendee to update")
+        return false, errors.ErrRecordNotFound
     }
     if attendee.UserID != currentUser.ID {
-        return false, errors.New("Unauthorized attempt")
+        return false, errors.ErrUnauthenticated
     }
     // TODO: If the meetup hasn't been made yet, we must delete the reminder for the user.
     return true, a.AttendeesRepo.Delete(attendee)
@@ -50,10 +50,10 @@ func (a *mutationResolver) UpdateAttendance(ctx context.Context, id string, stat
 
     attendee, err := a.AttendeesRepo.GetByID(id)
     if err != nil {
-        return nil, errors.New("Couldn't find this attendee to update")
+        return nil, errors.ErrRecordNotFound
     }
     if attendee.UserID != currentUser.ID {
-        return nil, errors.New("Unauthorized attempt")
+        return nil, errors.ErrUnauthenticated
     }
 
     attendee.Status = status.String()
