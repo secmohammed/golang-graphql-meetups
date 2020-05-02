@@ -25,10 +25,6 @@ func (r *Resolver) Subscription() graphql.SubscriptionResolver {
 }
 func (r *subscriptionResolver) MessageAdded(ctx context.Context) (<-chan *models.Conversation, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-    err := r.createUser(currentUser.ID)
-    if err != nil {
-        return nil, err
-    }
     event := make(chan *models.Conversation, 1)
     sub, err := r.nClient.Subscribe("conversation", func(t *models.Conversation) {
         participants, err := r.ConversationsRepo.GetConversationParticipants(t.ParentID)
@@ -51,29 +47,6 @@ func (r *subscriptionResolver) MessageAdded(ctx context.Context) (<-chan *models
         sub.Unsubscribe()
     }()
     return event, nil
-}
-func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan string, error) {
-    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-    err := r.createUser(currentUser.ID)
-    if err != nil {
-        return nil, err
-    }
-
-    // Create new channel for request
-    users := make(chan string, 1)
-    r.mutex.Lock()
-    r.userChannels[currentUser.ID] = users
-    r.mutex.Unlock()
-
-    // Delete channel when done
-    go func() {
-        <-ctx.Done()
-        r.mutex.Lock()
-        delete(r.userChannels, currentUser.ID)
-        r.mutex.Unlock()
-    }()
-
-    return users, nil
 }
 func (r *queryResolver) Conversation(ctx context.Context, id string) (*models.Conversation, error) {
     return r.ConversationsRepo.GetByID(id)

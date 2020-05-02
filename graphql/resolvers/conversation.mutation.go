@@ -35,14 +35,9 @@ func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID str
         return nil, err
     }
 
-    if err := c.createUser(currentUser.ID); err != nil {
-        return nil, err
-    }
-
     if _, err := c.ConversationsRepo.GetByID(conversationID); err != nil {
         return nil, err
     }
-    // c.nClient.Publish("todotopic", todo)
     conversation := &models.Conversation{
         ParentID:  conversationID,
         UserID:    currentUser.ID,
@@ -53,10 +48,6 @@ func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID str
     if err != nil {
         return nil, err
     }
-    // participants, err := c.ConversationsRepo.GetConversationParticipants(conversationID)
-    // if err != nil {
-    //     return nil, err
-    // }
 
     c.nClient.Publish("conversation", conversation)
 

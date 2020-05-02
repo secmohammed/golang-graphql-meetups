@@ -226,5 +226,4 @@ input CreateMessageInput {
 }
 type Subscription {
   messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
-  userJoined: String! @authentication(auth: AUTHENTICATED)
 }
