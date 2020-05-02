@@ -34,23 +34,31 @@ func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID str
     if err := input.Validate(); err != nil {
         return nil, err
     }
+
+    if err := c.createUser(currentUser.ID); err != nil {
+        return nil, err
+    }
+
     if _, err := c.ConversationsRepo.GetByID(conversationID); err != nil {
         return nil, err
     }
-    newConversation := &models.Conversation{
+    // c.nClient.Publish("todotopic", todo)
+    conversation := &models.Conversation{
         ParentID:  conversationID,
         UserID:    currentUser.ID,
         Message:   input.Message,
         LastReply: time.Now().Format(time.RFC3339),
     }
-    conversation, err := c.ConversationsRepo.Create(newConversation)
+    conversation, err := c.ConversationsRepo.Create(conversation)
     if err != nil {
         return nil, err
     }
-    for _, observer := range conversationMessageAdded {
-        // implement logic here to push the conversation to only people related.
-        observer <- conversation
-    }
+    // participants, err := c.ConversationsRepo.GetConversationParticipants(conversationID)
+    // if err != nil {
+    //     return nil, err
+    // }
+
+    c.nClient.Publish("conversation", conversation)
 
     return conversation, nil
 }

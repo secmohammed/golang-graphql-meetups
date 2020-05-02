@@ -27,7 +27,7 @@ type CreateMeetupInput struct {
     Name        string `json:"name" validate:"required,min=3,max=100"`
     Description string `json:"description" validate:"required,min=3,max=500"`
     StartDate   string `json:"start_date" validate:"required"`
-    EndDate     string `json:"end_date" validate:"requireed"`
+    EndDate     string `json:"end_date" validate:"required"`
     Location    string `json:"location" validate:"required,min=3,max=100"`
     GroupID     string `json:"group_id" validate:"omitempty"`
 }

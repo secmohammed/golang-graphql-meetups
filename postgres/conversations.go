@@ -25,6 +25,14 @@ func (c *ConversationsRepo) CreateConversationUsers(userIds []string, conversati
     _, err := c.DB.Model(&conversations).Insert()
     return err
 }
+func (c *ConversationsRepo) GetConversationParticipants(conversationID string) ([]*models.ConversationUser, error) {
+    var participants []*models.ConversationUser
+    err := c.DB.Model(&participants).Where("conversation_id = ?", conversationID).Select()
+    if err != nil {
+        return nil, err
+    }
+    return participants, nil
+}
 
 //Create is used to create a conversation using the passed struct.
 func (c *ConversationsRepo) Create(conversation *models.Conversation) (*models.Conversation, error) {
@@ -46,6 +54,14 @@ func (c *ConversationsRepo) GetByID(id string) (*models.Conversation, error) {
         return nil, err
     }
     return &conversation, nil
+}
+func (c *ConversationsRepo) GetConversationMessages(id string) ([]*models.Conversation, error) {
+    var conversations []*models.Conversation
+    err := c.DB.Model(&conversations).Where("parent_id = ?", id).Select()
+    if err != nil {
+        return nil, err
+    }
+    return conversations, nil
 }
 
 // Delete is used to delete conversation by its id.

@@ -29,10 +29,25 @@ func NewCache(redisAddress string, ttl time.Duration) (*Cache, error) {
         ttl:    ttl,
     }, nil
 }
+func (c *Cache) Subscribe(channels ...string) *redis.PubSub {
+    return c.client.Subscribe(channels...)
+}
+func (c *Cache) Publish(channel string, message interface{}) *redis.IntCmd {
+    return c.client.Publish(channel, message)
+}
+
 func (c *Cache) SAdd(key, value string) error {
     return c.client.SAdd(key, value).Err()
 }
-
+func (c *Cache) LPush(key string, values ...interface{}) error {
+    return c.client.LPush(key, values...).Err()
+}
+func (c *Cache) LRange(key string, start, stop int64) *redis.StringSliceCmd {
+    return c.client.LRange(key, start, stop)
+}
+func (c *Cache) SMembers(key string) *redis.StringSliceCmd {
+    return c.client.SMembers(key)
+}
 func (c *Cache) Add(ctx context.Context, hash, query string) {
     c.client.Set(apqPrefix+hash, query, c.ttl)
 }

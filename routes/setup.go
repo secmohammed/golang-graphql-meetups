@@ -42,16 +42,10 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
     if err != nil {
         log.Fatalf("Cannot create APQ redis cache: %v", err)
     }
+    resolver := resolvers.NewResolver(DB, cache)
+    // resolver.StartSubscribingRedis()
 
-    c := graphql.Config{Resolvers: &resolvers.Resolver{
-        MeetupsRepo:       postgres.MeetupsRepo{DB: DB},
-        UsersRepo:         userRepo,
-        CommentsRepo:      postgres.CommentsRepo{DB: DB},
-        CategoriesRepo:    postgres.CategoriesRepo{DB: DB},
-        AttendeesRepo:     postgres.AttendeesRepo{DB: DB},
-        ConversationsRepo: postgres.ConversationsRepo{DB: DB},
-        GroupsRepo:        postgres.GroupsRepo{DB: DB},
-    }}
+    c := graphql.Config{Resolvers: resolver}
     c.Directives.Authentication = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, auth models.Authentication) (res interface{}, err error) {
         _, err = middlewares.GetCurrentUserFromContext(ctx)
         if err != nil && auth == "AUTHENTICATED" {

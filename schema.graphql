@@ -88,6 +88,7 @@ input CreateMeetupInput {
   start_date: String!
   end_date: String!
   description: String!
+  location: String!
   group_id: String
 }
 input CreateGroupInput {
@@ -225,4 +226,5 @@ input CreateMessageInput {
 }
 type Subscription {
   messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
+  userJoined: String! @authentication(auth: AUTHENTICATED)
 }

@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS  comments(
     id BIGSERIAL PRIMARY KEY,
-    body TEXT NOT NULL,
-    user_id BIGSERIAL REFERENCES users (id) ON DELETE CASCADE NOT NULL,
-    meetup_id BIGSERIAL REFERENCES meetups (id) ON DELETE CASCADE NOT NULL,
-    parent_id BIGSERIAL REFERENCES comments (id) ON DELETE CASCADE NULL,
-    group_id BIGSERIAL REFERENCES groups (id) ON DELETE CASCADE NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    body text NOT NULL,
+    user_id BIGSERIAL REFERENCES users(id) ON DELETE CASCADE,
+    meetup_id BIGSERIAL REFERENCES meetups(id) ON DELETE CASCADE,
+    parent_id BIGSERIAL REFERENCES comments(id) ON DELETE CASCADE,
+    group_id BIGSERIAL REFERENCES groups(id) ON DELETE CASCADE,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    deleted_at timestamp with time zone
 )

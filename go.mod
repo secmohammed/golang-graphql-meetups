@@ -15,11 +15,14 @@ require (
 	github.com/h2non/filetype v1.0.12
 	github.com/joho/godotenv v1.3.0
 	github.com/leodido/go-urn v1.2.0 // indirect
+	github.com/nats-io/gnatsd v1.4.1 // indirect
+	github.com/nats-io/nats-server v1.4.1 // indirect
+	github.com/nats-io/nats.go v1.9.2
 	github.com/pkg/errors v0.8.1
 	github.com/prprprus/scheduler v0.5.0
 	github.com/rs/cors v1.7.0
 	github.com/urfave/cli v1.20.0 // indirect
 	github.com/vektah/gqlparser v1.2.0
 	github.com/vektah/gqlparser/v2 v2.0.1
-	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
+	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 )

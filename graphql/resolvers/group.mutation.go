@@ -54,7 +54,6 @@ func (m *mutationResolver) UpdateGroup(ctx context.Context, id string, input mod
     if err != nil {
         return nil, errors.ErrRecordNotFound
     }
-    fmt.Println("here")
     // if he is an creator of the group
     // or currently authenticated user is a secondary admin or a moderator.
     exists, err := m.GroupsRepo.IsUserSecondaryAdminOfGroup(id, currentUser.ID)
