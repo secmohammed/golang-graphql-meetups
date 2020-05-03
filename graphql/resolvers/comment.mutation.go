@@ -27,10 +27,22 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
         MeetupID: input.MeetupID,
     }
     if input.ParentID != "" {
-        _, err := c.CommentsRepo.GetByID(input.ParentID)
+        //TODO: if comment has a parent_id, fetch the user_id that's attached to this record and notify this user.
+        foundComment, err := c.CommentsRepo.GetByID(input.ParentID)
         if err != nil {
             return nil, errors.ErrRecordNotFound
         }
+        // create notification for this user.
+        notification := &models.Notification{
+            UserID:         foundComment.UserID,
+            NotifiableType: "comment_created",
+            NotifiableID:   foundComment.ID,
+        }
+        notification, err = c.NotificationsRepo.Create(notification)
+        if err != nil {
+            return nil, errors.ErrInternalError
+        }
+        c.nClient.Publish("notification.user_"+foundComment.UserID, notification)
         comment.ParentID = input.ParentID
     }
     if input.GroupID != "" {
