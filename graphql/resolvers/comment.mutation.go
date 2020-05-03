@@ -12,11 +12,10 @@ type commentResolver struct{ *Resolver }
 
 func (c *mutationResolver) CreateComment(ctx context.Context, input models.CreateCommentInput) (*models.Comment, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-
-    if _, err := c.MeetupsRepo.GetByID(input.MeetupID); err != nil {
+    meetup, err := c.MeetupsRepo.GetByID(input.MeetupID)
+    if err != nil {
         return nil, errors.ErrRecordNotFound
     }
-
     if err := input.Validate(); err != nil {
         return nil, err
     }
@@ -34,9 +33,9 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
         }
         // create notification for this user.
         notification := &models.Notification{
-            UserID:         foundComment.UserID,
-            NotifiableType: "comment_created",
-            NotifiableID:   foundComment.ID,
+            UserID:         foundComment.UserID, // the one we wish to notify
+            NotifiableType: "reply_created",
+            NotifiableID:   foundComment.ID, // the concerened comment that caused the notification
         }
         notification, err = c.NotificationsRepo.Create(notification)
         if err != nil {
@@ -53,6 +52,16 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
 
         comment.GroupID = input.GroupID
     }
+    notification := &models.Notification{
+        UserID:         meetup.UserID, // the one we wish to notify which is the meetup owner.
+        NotifiableType: "comment_created",
+        NotifiableID:   meetup.ID, // the concerened meetup that caused the notification.
+    }
+    notification, err = c.NotificationsRepo.Create(notification)
+    if err != nil {
+        return nil, errors.ErrInternalError
+    }
+    c.nClient.Publish("notification.user_"+meetup.UserID, notification)
 
     return c.CommentsRepo.Create(comment)
 

@@ -10,6 +10,11 @@ type NotificationsRepo struct {
     DB *pg.DB
 }
 
+func (m *NotificationsRepo) CreateMany(notifications []models.Notification) ([]models.Notification, error) {
+    _, err := m.DB.Model(&notifications).Insert()
+    return notifications, err
+}
+
 // Create is used to create notification for the database.
 func (m *NotificationsRepo) Create(notification *models.Notification) (*models.Notification, error) {
     _, err := m.DB.Model(notification).Returning("*").Insert()

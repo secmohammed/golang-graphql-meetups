@@ -19,10 +19,10 @@
  ✔ Optional: ability to create meetup posts at groups. (encapsulates the meetup creation + associate to group_meetup) @done (20-04-21 04:08)
  ✔ Optional: Chat between users(WIP). @done (20-05-02 11:25)
  ≡ Feature: Implement authorization.
- ≡ Optional: notifications.
-   ≡ When user comments on meetup owner.
-   ≡ When user replies to owner of comment.
-   ≡ When meetup is created at a group, notify all of the members.
+ ✔ Optional: notifications. @done (20-05-03 09:28)
+   ✔ When user comments on meetup owner. @done (20-05-03 07:56)
+   ✔ When user replies to owner of comment. @done (20-05-03 07:46)
+   ✔ When meetup is created at a group, notify all of the members. @done (20-05-03 09:28)
  ✔ Optional: schedule reminders for upcoming events. @done (20-04-21 04:08)
  ✔ Test: Schedule reminder for attendance! @done (20-04-21 11:54)
  ✔ Test: Share/Removing shared meetup from groups. @done (20-04-21 08:37)

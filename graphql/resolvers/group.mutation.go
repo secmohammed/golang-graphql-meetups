@@ -3,6 +3,7 @@ package resolvers
 import (
     "context"
     "fmt"
+    "log"
 
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
@@ -87,6 +88,59 @@ func (m *mutationResolver) DeleteMeetupFromGroup(ctx context.Context, meetupID s
 
     return true, m.GroupsRepo.DetachMeetupFromGroup(groupID, meetupID)
 
+}
+
+func (m *mutationResolver) notifyMembersOfGroupForMeetupCreation(group *models.Group, meetup *models.Meetup) {
+    notificationsLength := len(group.Members)
+    if group.UserID != meetup.UserID {
+        // prepare the length of the notificaion to be capable of contain the extra index for the gorup owner
+        // which doesn't exist at the group.Members
+        notificationsLength++
+    }
+    notifications := make([]models.Notification, notificationsLength)
+    for i := 0; i < len(group.Members); i++ {
+        notification := models.Notification{
+            UserID:         group.Members[i].ID, // the one we wish to notify which is the member of group.
+            NotifiableType: "meetup_created",
+            NotifiableID:   meetup.ID, // the meetup that caused the notification.
+        }
+        notifications[i] = notification
+    }
+    if group.UserID != meetup.UserID {
+        // notify the owner of the group as well.
+        notifications[notificationsLength-1] = models.Notification{
+            UserID:         group.UserID,
+            NotifiableType: "meetup_created",
+            NotifiableID:   meetup.ID,
+        }
+    }
+    // we need to notify
+    notifications, err := m.NotificationsRepo.CreateMany(notifications)
+    if err != nil {
+        log.Fatal(err)
+    }
+    for _, notification := range notifications {
+        m.nClient.Publish("notification.user_"+notification.UserID, &notification)
+    }
+
+}
+func (m *mutationResolver) CreateGroupMeetup(ctx context.Context, input models.CreateMeetupInput, groupID string) (*models.Meetup, error) {
+
+    meetup, err := m.CreateMeetup(ctx, input)
+    if err != nil {
+        return nil, err
+    }
+    status, err := m.ShareMeetupToGroup(ctx, meetup.ID, groupID)
+    if err != nil || !status {
+        return nil, errors.ErrInternalError
+    }
+    group, err := m.GroupsRepo.GetGroupMembersExceptFor(groupID, meetup.UserID)
+    if err != nil {
+        return nil, err
+    }
+    go m.notifyMembersOfGroupForMeetupCreation(group, meetup)
+
+    return meetup, nil
 }
 func (m *mutationResolver) ShareMeetupToGroup(ctx context.Context, meetupID string, groupID string) (bool, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)

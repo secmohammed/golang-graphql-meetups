@@ -72,6 +72,26 @@ func (g *GroupsRepo) Create(group *models.Group) (*models.Group, error) {
     _, err := g.DB.Model(group).Returning("*").Insert()
     return group, err
 }
+func (g *GroupsRepo) GetGroupMembersExceptFor(groupID, userID string) (*models.Group, error) {
+    group := models.Group{}
+    err := g.DB.Model(&group).Where("\"group\".\"id\" = ?", groupID).Relation("Members", func(q *orm.Query) (*orm.Query, error) {
+        return q.Where("group_user.user_id != ?", userID), nil
+    }).First()
+    if err != nil {
+        return nil, err
+    }
+    return &group, nil
+
+}
+func (g *GroupsRepo) GetGroupMembers(groupID string) (*models.Group, error) {
+    group := models.Group{}
+    err := g.DB.Model(&group).Where("\"group\".\"id\" = ?", groupID).Relation("Members").First()
+    if err != nil {
+        return nil, err
+    }
+    return &group, nil
+
+}
 func (g *GroupsRepo) IsUserMemberOfGroup(id, authenticated_user_id string) (bool, error) {
     group := models.Group{}
     err := g.DB.Model(&group).Where("\"group\".\"id\" = ?", id).Relation("Members", func(q *orm.Query) (*orm.Query, error) {

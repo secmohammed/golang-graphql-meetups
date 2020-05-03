@@ -124,6 +124,7 @@ type ComplexityRoot struct {
 		CreateComment         func(childComplexity int, input models.CreateCommentInput) int
 		CreateConversation    func(childComplexity int, input models.CreateConversationInput) int
 		CreateGroup           func(childComplexity int, input models.CreateGroupInput) int
+		CreateGroupMeetup     func(childComplexity int, input models.CreateMeetupInput, groupID string) int
 		CreateInterest        func(childComplexity int, categoryID string) int
 		CreateMeetup          func(childComplexity int, input models.CreateMeetupInput) int
 		CreateMessage         func(childComplexity int, conversationID string, input models.CreateMessageInput) int
@@ -226,6 +227,7 @@ type MutationResolver interface {
 	DeleteMeetupFromGroup(ctx context.Context, meetupID string, groupID string) (bool, error)
 	CreateGroup(ctx context.Context, input models.CreateGroupInput) (*models.Group, error)
 	DeleteGroup(ctx context.Context, id string) (bool, error)
+	CreateGroupMeetup(ctx context.Context, input models.CreateMeetupInput, groupID string) (*models.Meetup, error)
 	UpdateGroup(ctx context.Context, id string, input models.UpdateGroupInput) (*models.Group, error)
 	AssignMemberToGroup(ctx context.Context, id string, userID string, role *string) (*models.Group, error)
 	CreateAttendance(ctx context.Context, input models.CreateAttendanceInput) (*models.Attendee, error)
@@ -622,6 +624,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateGroup(childComplexity, args["input"].(models.CreateGroupInput)), true
+
+	case "Mutation.createGroupMeetup":
+		if e.complexity.Mutation.CreateGroupMeetup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createGroupMeetup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateGroupMeetup(childComplexity, args["input"].(models.CreateMeetupInput), args["group_id"].(string)), true
 
 	case "Mutation.createInterest":
 		if e.complexity.Mutation.CreateInterest == nil {
@@ -1412,7 +1426,7 @@ type Mutation {
 
   createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
-
+  createGroupMeetup(input: CreateMeetupInput!, group_id: ID!): Meetup! @authentication(auth: AUTHENTICATED)
   updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   # we need to make sure that user who does that is actually an admin.
   assignMemberToGroup(id: ID!, userID: ID!, role: String = "member"): Group! @authentication(auth: AUTHENTICATED)
@@ -1567,6 +1581,28 @@ func (ec *executionContext) field_Mutation_createConversation_args(ctx context.C
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createGroupMeetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateMeetupInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNCreateMeetupInput2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐCreateMeetupInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["group_id"]; ok {
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["group_id"] = arg1
 	return args, nil
 }
 
@@ -3660,6 +3696,71 @@ func (ec *executionContext) _Mutation_deleteGroup(ctx context.Context, field gra
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createGroupMeetup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createGroupMeetup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateGroupMeetup(rctx, args["input"].(models.CreateMeetupInput), args["group_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Meetup); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Meetup`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Meetup)
+	fc.Result = res
+	return ec.marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_updateGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8391,6 +8492,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteGroup":
 			out.Values[i] = ec._Mutation_deleteGroup(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createGroupMeetup":
+			out.Values[i] = ec._Mutation_createGroupMeetup(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

@@ -197,7 +197,7 @@ type Mutation {
 
   createGroup(input: CreateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   deleteGroup(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
-
+  createGroupMeetup(input: CreateMeetupInput!, group_id: ID!): Meetup! @authentication(auth: AUTHENTICATED)
   updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   # we need to make sure that user who does that is actually an admin.
   assignMemberToGroup(id: ID!, userID: ID!, role: String = "member"): Group! @authentication(auth: AUTHENTICATED)

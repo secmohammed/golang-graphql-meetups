@@ -1,8 +1,6 @@
 package postgres
 
 import (
-    "fmt"
-
     "github.com/go-pg/pg"
     "github.com/secmohammed/meetups/models"
 )
@@ -14,7 +12,6 @@ type ConversationsRepo struct {
 
 func (c *ConversationsRepo) CreateConversationUsers(userIds []string, conversation *models.Conversation) error {
     conversations := make([]models.ConversationUser, len(userIds))
-    fmt.Println(conversations, len(userIds))
     for i := 0; i < len(userIds); i++ {
         conversations = append(conversations, models.ConversationUser{
             UserID:         userIds[i],
