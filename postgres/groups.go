@@ -29,6 +29,7 @@ func (g *GroupsRepo) AttachMeetupToGroup(group *models.Group, meetup *models.Mee
     return err
 }
 func (g *GroupsRepo) AssignMemberToGroup(group *models.Group, userID, role string) (*models.Group, error) {
+    //TODO: FirstOrCreate.
     groupUser := models.GroupUser{
         GroupID: group.ID,
         UserID:  userID,

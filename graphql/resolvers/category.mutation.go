@@ -63,6 +63,7 @@ func (c *mutationResolver) UpdateCategory(ctx context.Context, name string, inpu
     if err != nil {
         return nil, errors.ErrRecordNotFound
     }
+    // TODO: check if user is admin, or has the ability to update a category.
     if category.UserID != currentUser.ID {
         return nil, errors.ErrUnauthenticated
     }
@@ -79,6 +80,7 @@ func (c *mutationResolver) DeleteCategory(ctx context.Context, name string) (boo
     }
 
     category, err := c.CategoriesRepo.GetByName(name)
+    // TODO: check if user is admin, or has the ability to delete a category.
     if err != nil {
         return false, errors.ErrRecordNotFound
     }

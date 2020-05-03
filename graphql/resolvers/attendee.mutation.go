@@ -33,7 +33,7 @@ func (a *mutationResolver) CreateAttendance(ctx context.Context, input models.Cr
 }
 func (a *mutationResolver) DeleteAttendance(ctx context.Context, id string) (bool, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-
+    // TODO: to Delete attendance, it must be like sort of cancelation because a user mustn't delete his attendance of a meetup he attended.
     attendee, err := a.AttendeesRepo.GetByID(id)
     if err != nil {
         return false, errors.ErrRecordNotFound
@@ -42,12 +42,13 @@ func (a *mutationResolver) DeleteAttendance(ctx context.Context, id string) (boo
         return false, errors.ErrUnauthenticated
     }
     // TODO: If the meetup hasn't been made yet, we must delete the reminder for the user.
+    // to do so, we must store the schedule id that's made at redis.
     return true, a.AttendeesRepo.Delete(attendee)
 
 }
 func (a *mutationResolver) UpdateAttendance(ctx context.Context, id string, status models.AttendanceStatus) (*models.Attendee, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
-
+    // TODO: user can't update a status if the meeeting has passed away.
     attendee, err := a.AttendeesRepo.GetByID(id)
     if err != nil {
         return nil, errors.ErrRecordNotFound

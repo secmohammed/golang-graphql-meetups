@@ -18,6 +18,7 @@
   ✔ Extra Feature: Enable users to comment/reply on the shared meetup on a group. @done (20-04-21 04:32)
  ✔ Optional: ability to create meetup posts at groups. (encapsulates the meetup creation + associate to group_meetup) @done (20-04-21 04:08)
  ✔ Optional: Chat between users(WIP). @done (20-05-02 11:25)
+ ≡ Feature: Implement authorization.
  ≡ Optional: notifications.
    ≡ When user comments on meetup owner.
    ≡ When user replies to owner of comment.

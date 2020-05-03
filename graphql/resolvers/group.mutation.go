@@ -19,8 +19,6 @@ func (m *mutationResolver) CreateGroup(ctx context.Context, input models.CreateG
         Description: input.Description,
         UserID:      currentUser.ID,
     }
-    // TODO: attach user_id to group_id, attach categories_ids to group_id
-
     group, err := m.GroupsRepo.Create(group)
     if err != nil {
         return nil, err
@@ -37,7 +35,7 @@ func (m *mutationResolver) DeleteGroup(ctx context.Context, id string) (bool, er
     if group.UserID != currentUser.ID {
         return false, errors.ErrUnauthenticated
     }
-
+    // TODO: Delete members of group, on deletion of group.
     err = m.GroupsRepo.Delete(group)
     if err != nil {
         return false, fmt.Errorf("error while deleting group: %v", err)
@@ -126,4 +124,9 @@ func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, u
     // then we can add user to group.
 
     return m.GroupsRepo.AssignMemberToGroup(group, userID, *role)
+}
+
+//TODO:
+func (m *mutationResolver) DischargeMemberFromGroup(ctx context.Context, id string, userID string) (*models.Group, error) {
+    return nil, nil
 }

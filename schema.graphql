@@ -226,4 +226,5 @@ input CreateMessageInput {
 }
 type Subscription {
   messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
+  # notificationPushed: Notification! @authentication(auth: AUTHENTICATED)
 }

@@ -53,5 +53,6 @@ func (r *queryResolver) Conversation(ctx context.Context, id string) (*models.Co
 }
 
 func (r *queryResolver) Conversations(ctx context.Context) ([]*models.Conversation, error) {
+    // TODO: implement conversations
     return nil, nil
 }

@@ -22,6 +22,8 @@ func (c *mutationResolver) CreateConversation(ctx context.Context, input models.
     if err != nil {
         return nil, err
     }
+    //TODO: validate against existence of passed users first.
+
     // then insert them at conversation_user table
     if err = c.ConversationsRepo.CreateConversationUsers(input.UserIds, conversation); err != nil {
         return nil, err
