@@ -50,8 +50,7 @@ func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID str
     if err != nil {
         return nil, err
     }
-
-    c.nClient.Publish("conversation", conversation)
+    c.nClient.Publish("conversation."+conversationID, conversation)
 
     return conversation, nil
 }

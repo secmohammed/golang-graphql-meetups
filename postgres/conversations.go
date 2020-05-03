@@ -25,6 +25,15 @@ func (c *ConversationsRepo) CreateConversationUsers(userIds []string, conversati
     _, err := c.DB.Model(&conversations).Insert()
     return err
 }
+func (c *ConversationsRepo) IsUserParticipantOfConversation(userID, conversationID string) (bool, error) {
+    conversationUser := models.ConversationUser{}
+    err := c.DB.Model(&conversationUser).Where("user_id = ?", userID).Where("conversation_id = ?", conversationID).Select()
+    if err != nil {
+        return false, err
+    }
+    return true, nil
+
+}
 func (c *ConversationsRepo) GetConversationParticipants(conversationID string) ([]*models.ConversationUser, error) {
     var participants []*models.ConversationUser
     err := c.DB.Model(&participants).Where("conversation_id = ?", conversationID).Select()

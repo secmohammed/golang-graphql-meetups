@@ -2,11 +2,11 @@ package resolvers
 
 import (
     "context"
-    "log"
 
     "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
+    "github.com/secmohammed/meetups/utils/errors"
 )
 
 type conversationResolver struct{ *Resolver }
@@ -23,20 +23,15 @@ type subscriptionResolver struct{ *Resolver }
 func (r *Resolver) Subscription() graphql.SubscriptionResolver {
     return &subscriptionResolver{r}
 }
-func (r *subscriptionResolver) MessageAdded(ctx context.Context) (<-chan *models.Conversation, error) {
+func (r *subscriptionResolver) MessageAdded(ctx context.Context, conversationID string) (<-chan *models.Conversation, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    value, err := r.ConversationsRepo.IsUserParticipantOfConversation(currentUser.ID, conversationID)
+    if err != nil || !value {
+        return nil, errors.ErrUnauthenticated
+    }
     event := make(chan *models.Conversation, 1)
-    sub, err := r.nClient.Subscribe("conversation", func(t *models.Conversation) {
-        participants, err := r.ConversationsRepo.GetConversationParticipants(t.ParentID)
-
-        if err != nil {
-            log.Fatalln("couldn't find participants", err)
-        }
-        for _, participant := range participants {
-            if currentUser.ID == participant.UserID {
-                event <- t
-            }
-        }
+    sub, err := r.nClient.Subscribe("conversation."+conversationID, func(t *models.Conversation) {
+        event <- t
     })
     if err != nil {
         return nil, err

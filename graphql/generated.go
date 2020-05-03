@@ -171,7 +171,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		MessageAdded       func(childComplexity int) int
+		MessageAdded       func(childComplexity int, conversationID string) int
 		NotificationPushed func(childComplexity int) int
 	}
 
@@ -267,7 +267,7 @@ type QueryResolver interface {
 	Category(ctx context.Context, name string) (*models.Category, error)
 }
 type SubscriptionResolver interface {
-	MessageAdded(ctx context.Context) (<-chan *models.Conversation, error)
+	MessageAdded(ctx context.Context, conversationID string) (<-chan *models.Conversation, error)
 	NotificationPushed(ctx context.Context) (<-chan *models.Notification, error)
 }
 type UserResolver interface {
@@ -1034,7 +1034,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Subscription.MessageAdded(childComplexity), true
+		args, err := ec.field_Subscription_messageAdded_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.MessageAdded(childComplexity, args["conversation_id"].(string)), true
 
 	case "Subscription.notificationPushed":
 		if e.complexity.Subscription.NotificationPushed == nil {
@@ -1454,7 +1459,7 @@ input CreateMessageInput {
   message: String!
 }
 type Subscription {
-  messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
+  messageAdded(conversation_id: ID!): Conversation! @authentication(auth: AUTHENTICATED)
   notificationPushed: Notification! @authentication(auth: AUTHENTICATED)
 }
 `, BuiltIn: false},
@@ -2086,6 +2091,20 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_messageAdded_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["conversation_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["conversation_id"] = arg0
 	return args, nil
 }
 
@@ -5849,10 +5868,17 @@ func (ec *executionContext) _Subscription_messageAdded(ctx context.Context, fiel
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Subscription_messageAdded_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Subscription().MessageAdded(rctx)
+			return ec.resolvers.Subscription().MessageAdded(rctx, args["conversation_id"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
