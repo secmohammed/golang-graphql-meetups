@@ -15,15 +15,16 @@ const userloaderKey = utils.ContextKey("userloader")
 
 //Loaders struct.
 type Loaders struct {
-    UserByID           *UserLoader
-    MeetupsByCategory  *MeetupsLoader
-    MeetupsByGroup     *MeetupsLoader
-    CategoriesByMeetup *CategoriesLoader
-    CategoriesByGroup  *CategoriesLoader
-    MembersByGroup     *MembersLoader
-    AttendeesByMeetup  *AttendeesLoader
-    MeetupByID         *MeetupLoader
-    InterestsByUser    *CategoriesLoader
+    UserByID            *UserLoader
+    MeetupsByCategory   *MeetupsLoader
+    MeetupsByGroup      *MeetupsLoader
+    CategoriesByMeetup  *CategoriesLoader
+    CategoriesByGroup   *CategoriesLoader
+    MembersByGroup      *MembersLoader
+    AttendeesByMeetup   *AttendeesLoader
+    NotificationsByUser *NotificationsLoader
+    MeetupByID          *MeetupLoader
+    InterestsByUser     *CategoriesLoader
     // commentsByMeetup    *ItemSliceLoader
 }
 
@@ -133,6 +134,26 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                     }
                 }
                 return members, nil
+            },
+        }
+        loaders.NotificationsByUser = &NotificationsLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Notification, []error) {
+                var users []*models.User
+                err := db.Model(&users).Where("id in (?)", pg.In(ids)).OrderExpr("id DESC").Relation("Notifications").Select()
+                if err != nil {
+                    return nil, []error{err}
+                }
+                m := make(map[string]*models.User, len(ids))
+                for _, user := range users {
+                    m[user.ID] = user
+                }
+                notifications := make([][]*models.Notification, len(ids))
+                for i, id := range ids {
+                    notifications[i] = m[id].Notifications
+                }
+                return notifications, nil
             },
         }
         loaders.CategoriesByMeetup = &CategoriesLoader{

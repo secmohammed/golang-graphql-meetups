@@ -2,6 +2,7 @@
 #
 # Refer to https://gqlgen.com/config/
 # for detailed .gqlgen.yml documentation.
+struct_tag: gqlgen
 
 schema:
   - schema.graphql
@@ -21,6 +22,8 @@ models:
       interests:
         resolver: true
       meetups:
+        resolver: true
+      notifications:
         resolver: true
   Meetup:
     model: github.com/secmohammed/meetups/models.Meetup
@@ -53,6 +56,11 @@ models:
       members:
         resolver: true
       meetups:
+        resolver: true
+  Notification:
+    model: github.com/secmohammed/meetups/models.Notification
+    fields:
+      user:
         resolver: true
   Category:
     model: github.com/secmohammed/meetups/models.Category

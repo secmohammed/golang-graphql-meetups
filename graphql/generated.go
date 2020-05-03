@@ -45,6 +45,7 @@ type ResolverRoot interface {
 	Group() GroupResolver
 	Meetup() MeetupResolver
 	Mutation() MutationResolver
+	Notification() NotificationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
 	User() UserResolver
@@ -143,6 +144,15 @@ type ComplexityRoot struct {
 		UpdateMeetup          func(childComplexity int, id string, input models.UpdateMeetupInput) int
 	}
 
+	Notification struct {
+		CreatedAt      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		NotifiableID   func(childComplexity int) int
+		NotifiableType func(childComplexity int) int
+		ReadAt         func(childComplexity int) int
+		User           func(childComplexity int) int
+	}
+
 	Query struct {
 		AuthenticatedUser      func(childComplexity int) int
 		Categories             func(childComplexity int, limit *int, offset *int) int
@@ -155,6 +165,8 @@ type ComplexityRoot struct {
 		Groups                 func(childComplexity int) int
 		Meetup                 func(childComplexity int, id string) int
 		Meetups                func(childComplexity int, filter *models.MeetupFilterInput, limit *int, offset *int) int
+		Notification           func(childComplexity int, id string) int
+		Notifications          func(childComplexity int) int
 		User                   func(childComplexity int, id string) int
 	}
 
@@ -163,15 +175,16 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Avatar    func(childComplexity int) int
-		Comments  func(childComplexity int) int
-		Email     func(childComplexity int) int
-		FirstName func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Interests func(childComplexity int) int
-		LastName  func(childComplexity int) int
-		Meetups   func(childComplexity int) int
-		Username  func(childComplexity int) int
+		Avatar        func(childComplexity int) int
+		Comments      func(childComplexity int) int
+		Email         func(childComplexity int) int
+		FirstName     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Interests     func(childComplexity int) int
+		LastName      func(childComplexity int) int
+		Meetups       func(childComplexity int) int
+		Notifications func(childComplexity int) int
+		Username      func(childComplexity int) int
 	}
 
 	UserGroup struct {
@@ -233,7 +246,12 @@ type MutationResolver interface {
 	CreateMessage(ctx context.Context, conversationID string, input models.CreateMessageInput) (*models.Conversation, error)
 	CreateConversation(ctx context.Context, input models.CreateConversationInput) (*models.Conversation, error)
 }
+type NotificationResolver interface {
+	User(ctx context.Context, obj *models.Notification) (*models.User, error)
+}
 type QueryResolver interface {
+	Notifications(ctx context.Context) ([]*models.Notification, error)
+	Notification(ctx context.Context, id string) (*models.Notification, error)
 	Comments(ctx context.Context, meetupID string) ([]*models.Comment, error)
 	Groups(ctx context.Context) ([]*models.Group, error)
 	Group(ctx context.Context, id string) (*models.Group, error)
@@ -252,6 +270,7 @@ type SubscriptionResolver interface {
 }
 type UserResolver interface {
 	Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error)
+	Notifications(ctx context.Context, obj *models.User) ([]*models.Notification, error)
 	Interests(ctx context.Context, obj *models.User) ([]*models.Category, error)
 	Comments(ctx context.Context, obj *models.User) ([]*models.Comment, error)
 }
@@ -818,6 +837,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateMeetup(childComplexity, args["id"].(string), args["input"].(models.UpdateMeetupInput)), true
 
+	case "Notification.created_at":
+		if e.complexity.Notification.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Notification.CreatedAt(childComplexity), true
+
+	case "Notification.id":
+		if e.complexity.Notification.ID == nil {
+			break
+		}
+
+		return e.complexity.Notification.ID(childComplexity), true
+
+	case "Notification.notifiable_id":
+		if e.complexity.Notification.NotifiableID == nil {
+			break
+		}
+
+		return e.complexity.Notification.NotifiableID(childComplexity), true
+
+	case "Notification.notifiable_type":
+		if e.complexity.Notification.NotifiableType == nil {
+			break
+		}
+
+		return e.complexity.Notification.NotifiableType(childComplexity), true
+
+	case "Notification.read_at":
+		if e.complexity.Notification.ReadAt == nil {
+			break
+		}
+
+		return e.complexity.Notification.ReadAt(childComplexity), true
+
+	case "Notification.user":
+		if e.complexity.Notification.User == nil {
+			break
+		}
+
+		return e.complexity.Notification.User(childComplexity), true
+
 	case "Query.authenticatedUser":
 		if e.complexity.Query.AuthenticatedUser == nil {
 			break
@@ -935,6 +996,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Meetups(childComplexity, args["filter"].(*models.MeetupFilterInput), args["limit"].(*int), args["offset"].(*int)), true
 
+	case "Query.notification":
+		if e.complexity.Query.Notification == nil {
+			break
+		}
+
+		args, err := ec.field_Query_notification_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Notification(childComplexity, args["id"].(string)), true
+
+	case "Query.notifications":
+		if e.complexity.Query.Notifications == nil {
+			break
+		}
+
+		return e.complexity.Query.Notifications(childComplexity), true
+
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -1009,6 +1089,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Meetups(childComplexity), true
+
+	case "User.notifications":
+		if e.complexity.User.Notifications == nil {
+			break
+		}
+
+		return e.complexity.User.Notifications(childComplexity), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -1123,9 +1210,24 @@ enum Authentication {
   GUEST
   AUTHENTICATED
 }
+enum NotifiableType {
+  reply_created
+  comment_created
+  meetup_created
+  meetup_reminder
+  meetup_shared_to_group
+}
 type UserGroup {
   user: User!
   type: String!
+}
+type Notification {
+  id: ID!
+  notifiable_id: String!
+  notifiable_type: NotifiableType!
+  read_at: Time!
+  created_at: Time!
+  user: User!
 }
 type Group {
   id: ID!
@@ -1165,6 +1267,7 @@ type User {
   last_name: String!
   avatar: String!
   meetups: [Meetup!]!
+  notifications: [Notification!]!
   interests: [Category!]!
   comments: [Comment!]!
 }
@@ -1258,6 +1361,9 @@ input CreateAttendanceInput {
   meetup_id: ID!
 }
 type Query {
+  notifications: [Notification!]! @authentication(auth: AUTHENTICATED)
+  notification(id: ID!): Notification! @authentication(auth: AUTHENTICATED)
+
   comments(meetup_id: ID!): [Comment!]!
 
   groups: [Group!]!
@@ -1340,6 +1446,7 @@ input CreateMessageInput {
 }
 type Subscription {
   messageAdded: Conversation! @authentication(auth: AUTHENTICATED)
+  # notificationPushed: Notification! @authentication(auth: AUTHENTICATED)
 }
 `, BuiltIn: false},
 }
@@ -1942,6 +2049,20 @@ func (ec *executionContext) field_Query_meetups_args(ctx context.Context, rawArg
 		}
 	}
 	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_notification_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -4813,6 +4934,333 @@ func (ec *executionContext) _Mutation_createConversation(ctx context.Context, fi
 	return ec.marshalNConversation2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐConversation(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Notification_id(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Notification",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_notifiable_id(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Notification",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotifiableID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_notifiable_type(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Notification",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotifiableType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.NotifiableType)
+	fc.Result = res
+	return ec.marshalNNotifiableType2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotifiableType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_read_at(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Notification",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReadAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_created_at(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Notification",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_user(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Notification",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Notification().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_notifications(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Notifications(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*models.Notification); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/secmohammed/meetups/models.Notification`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotificationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_notification(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_notification_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Notification(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Authentication == nil {
+				return nil, errors.New("directive authentication is not implemented")
+			}
+			return ec.directives.Authentication(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Notification); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/secmohammed/meetups/models.Notification`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotification(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5681,6 +6129,40 @@ func (ec *executionContext) _User_meetups(ctx context.Context, field graphql.Col
 	res := resTmp.([]*models.Meetup)
 	fc.Result = res
 	return ec.marshalNMeetup2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐMeetupᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_notifications(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Notifications(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotificationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_interests(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -7920,6 +8402,67 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var notificationImplementors = []string{"Notification"}
+
+func (ec *executionContext) _Notification(ctx context.Context, sel ast.SelectionSet, obj *models.Notification) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, notificationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Notification")
+		case "id":
+			out.Values[i] = ec._Notification_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "notifiable_id":
+			out.Values[i] = ec._Notification_notifiable_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "notifiable_type":
+			out.Values[i] = ec._Notification_notifiable_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "read_at":
+			out.Values[i] = ec._Notification_read_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "created_at":
+			out.Values[i] = ec._Notification_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Notification_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -7935,6 +8478,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "notifications":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_notifications(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "notification":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_notification(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "comments":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8188,6 +8759,20 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_meetups(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "notifications":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_notifications(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -8944,6 +9529,66 @@ func (ec *executionContext) marshalNMeetup2ᚖgithubᚗcomᚋsecmohammedᚋmeetu
 		return graphql.Null
 	}
 	return ec._Meetup(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNNotifiableType2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotifiableType(ctx context.Context, v interface{}) (models.NotifiableType, error) {
+	var res models.NotifiableType
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNNotifiableType2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotifiableType(ctx context.Context, sel ast.SelectionSet, v models.NotifiableType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNNotification2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotification(ctx context.Context, sel ast.SelectionSet, v models.Notification) graphql.Marshaler {
+	return ec._Notification(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNotification2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotificationᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Notification) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNotification2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotification(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNNotification2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐNotification(ctx context.Context, sel ast.SelectionSet, v *models.Notification) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Notification(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {

@@ -13,17 +13,18 @@ import (
 
 //User model attributes.
 type User struct {
-    ID         string `json:"id"`
-    Username   string `json:"username"`
-    Email      string `json:"email"`
-    Password   string `json:"password"`
-    FirstName  string `json:"first_name"`
-    LastName   string `json:"last_name"`
-    Attendees  []*Attendee
-    Categories []*Category `pg:"many2many:category_user"`
-    Groups     []*Group    `pg:"many2many:group_user"`
-    Avatar     string      `json:"avatar"`
-    Type       string      `sql:"-" json:"-"`
+    ID            string `json:"id"`
+    Username      string `json:"username"`
+    Email         string `json:"email"`
+    Password      string `json:"password"`
+    FirstName     string `json:"first_name"`
+    LastName      string `json:"last_name"`
+    Attendees     []*Attendee
+    Notifications []*Notification
+    Categories    []*Category `pg:"many2many:category_user"`
+    Groups        []*Group    `pg:"many2many:group_user"`
+    Avatar        string      `json:"avatar"`
+    Type          string      `sql:"-" json:"-"`
 
     CreatedAt time.Time  `json:"created_at"`
     UpdatedAt time.Time  `json:"updated_at"`

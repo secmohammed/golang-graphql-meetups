@@ -9,9 +9,24 @@ enum Authentication {
   GUEST
   AUTHENTICATED
 }
+enum NotifiableType {
+  reply_created
+  comment_created
+  meetup_created
+  meetup_reminder
+  meetup_shared_to_group
+}
 type UserGroup {
   user: User!
   type: String!
+}
+type Notification {
+  id: ID!
+  notifiable_id: String!
+  notifiable_type: NotifiableType!
+  read_at: Time!
+  created_at: Time!
+  user: User!
 }
 type Group {
   id: ID!
@@ -51,6 +66,7 @@ type User {
   last_name: String!
   avatar: String!
   meetups: [Meetup!]!
+  notifications: [Notification!]!
   interests: [Category!]!
   comments: [Comment!]!
 }
@@ -144,6 +160,9 @@ input CreateAttendanceInput {
   meetup_id: ID!
 }
 type Query {
+  notifications: [Notification!]! @authentication(auth: AUTHENTICATED)
+  notification(id: ID!): Notification! @authentication(auth: AUTHENTICATED)
+
   comments(meetup_id: ID!): [Comment!]!
 
   groups: [Group!]!

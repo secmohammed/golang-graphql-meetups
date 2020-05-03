@@ -30,6 +30,9 @@ func (r *queryResolver) FilteredMeetupsForUser(ctx context.Context, filter *mode
 
     return r.MeetupsRepo.GetFilteredMeetupsBasedOnUser(currentUser.ID, filter, limit, offset)
 }
+func (u *userResolver) Notifications(ctx context.Context, obj *models.User) ([]*models.Notification, error) {
+    return loaders.GetLoaders(ctx).NotificationsByUser.Load(obj.ID)
+}
 
 func (r *queryResolver) AuthenticatedUser(ctx context.Context) (*models.User, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
