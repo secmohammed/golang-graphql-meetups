@@ -13,14 +13,16 @@ import (
 
 //User model attributes.
 type User struct {
-    ID            string `json:"id"`
-    Username      string `json:"username"`
-    Email         string `json:"email"`
-    Password      string `json:"password"`
-    FirstName     string `json:"first_name"`
-    LastName      string `json:"last_name"`
+    ID            string          `json:"id"`
+    Username      string          `json:"username"`
+    Email         string          `json:"email"`
+    Password      string          `json:"password"`
+    FirstName     string          `json:"first_name"`
+    LastName      string          `json:"last_name"`
+    Permissions   map[string]bool `json:"permissions"`
     Attendees     []*Attendee
     Notifications []*Notification
+    Roles         []*Role     `pg:"many2many:role_user,joinFK:role_id"`
     Categories    []*Category `pg:"many2many:category_user"`
     Groups        []*Group    `pg:"many2many:group_user"`
     Avatar        string      `json:"avatar"`

@@ -11,6 +11,11 @@ exec:
 model:
   filename: models/models_gen.go
 models:
+  Role:
+    model: github.com/secmohammed/meetups/models.Role
+    fields:
+      user:
+        resolver: true
   Conversation:
     model: github.com/secmohammed/meetups/models.Conversation
     fields:
@@ -19,6 +24,8 @@ models:
   User:
     model: github.com/secmohammed/meetups/models.User
     fields:
+      roles: 
+        resolver: true
       interests:
         resolver: true
       meetups:

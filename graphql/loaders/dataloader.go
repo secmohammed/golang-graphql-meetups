@@ -19,6 +19,7 @@ type Loaders struct {
     MeetupsByCategory   *MeetupsLoader
     MeetupsByGroup      *MeetupsLoader
     CategoriesByMeetup  *CategoriesLoader
+    RolesByUser         *RolesLoader
     CategoriesByGroup   *CategoriesLoader
     MembersByGroup      *MembersLoader
     AttendeesByMeetup   *AttendeesLoader
@@ -174,6 +175,32 @@ func DataloaderMiddleware(db *pg.DB, next http.Handler) http.Handler {
                     categories[i] = m[id].Categories
                 }
                 return categories, nil
+            },
+        }
+        loaders.RolesByUser = &RolesLoader{
+            wait:     wait,
+            maxBatch: 100,
+            fetch: func(ids []string) ([][]*models.Role, []error) {
+                var roles []*models.Role
+                err := db.Model(&roles).Relation("Users", func(q *orm.Query) (*orm.Query, error) {
+                    return q.Where("role_user.user_id in (?)", pg.In(ids)), nil
+                }).Select()
+
+                if err != nil {
+                    return nil, []error{err}
+                }
+                roleCollection := make([][]*models.Role, len(ids))
+
+                for _, role := range roles {
+                    for _, user := range role.Users {
+                        for i, id := range ids {
+                            if id == user.ID {
+                                roleCollection[i] = append(roleCollection[i], role)
+                            }
+                        }
+                    }
+                }
+                return roleCollection, nil
             },
         }
         loaders.CategoriesByGroup = &CategoriesLoader{

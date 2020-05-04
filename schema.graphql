@@ -1,5 +1,6 @@
 scalar Time
 scalar Upload
+scalar Any
 enum AttendanceStatus {
   going
   interested
@@ -8,6 +9,16 @@ directive @authentication(auth: Authentication!) on FIELD_DEFINITION
 enum Authentication {
   GUEST
   AUTHENTICATED
+}
+type Role {
+  id: ID!
+  slug: String!
+  name: String!
+  permissions: Any!
+  user: User!
+  created_at: Time!
+  updated_at: Time!
+  deleted_at: Time!
 }
 enum NotifiableType {
   reply_created
@@ -65,10 +76,12 @@ type User {
   first_name: String!
   last_name: String!
   avatar: String!
+  permissions: Any!
   meetups: [Meetup!]!
   notifications: [Notification!]!
   interests: [Category!]!
   comments: [Comment!]!
+  roles: [Role!]!
 }
 type Comment {
   id: ID!

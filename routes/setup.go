@@ -43,8 +43,6 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         log.Fatalf("Cannot create APQ redis cache: %v", err)
     }
     resolver := resolvers.NewResolver(DB, cache)
-    // resolver.StartSubscribingRedis()
-
     c := graphql.Config{Resolvers: resolver}
     c.Directives.Authentication = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, auth models.Authentication) (res interface{}, err error) {
         _, err = middlewares.GetCurrentUserFromContext(ctx)

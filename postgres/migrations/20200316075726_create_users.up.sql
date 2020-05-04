@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS  users(
     email VARCHAR(255) UNIQUE NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
+    permissions text[] DEFAULT NULL,
     password TEXT NOT NULL,
     avatar VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

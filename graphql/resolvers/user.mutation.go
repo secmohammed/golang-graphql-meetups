@@ -18,6 +18,7 @@ func (m *mutationResolver) Login(ctx context.Context, input *models.LoginInput) 
 
     user, err := m.UsersRepo.GetByField("email", input.Email)
     if err != nil {
+        log.Println(err)
         return nil, errors.ErrBadCredentials
     }
     err = user.ComparePassword(input.Password)

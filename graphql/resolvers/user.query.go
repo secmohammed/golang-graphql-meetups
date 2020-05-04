@@ -19,6 +19,9 @@ func (r *Resolver) User() graphql.UserResolver {
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
     return r.UsersRepo.GetByID(id)
 }
+func (u *userResolver) Roles(ctx context.Context, obj *models.User) ([]*models.Role, error) {
+    return loaders.GetLoaders(ctx).RolesByUser.Load(obj.ID)
+}
 func (r *queryResolver) FilteredMeetupsForUser(ctx context.Context, filter *models.MeetupFilterInput, limit *int, offset *int) ([]*models.Meetup, error) {
     currentUser, err := middlewares.GetCurrentUserFromContext(ctx)
     if err != nil {
@@ -38,7 +41,9 @@ func (r *queryResolver) AuthenticatedUser(ctx context.Context) (*models.User, er
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     return r.UsersRepo.GetByID(currentUser.ID)
 }
-
+func (u *userResolver) Permissions(ctx context.Context, obj *models.User) (interface{}, error) {
+    return obj.Permissions, nil
+}
 func (u *userResolver) Meetups(ctx context.Context, obj *models.User) ([]*models.Meetup, error) {
     return u.MeetupsRepo.GetMeetupsForUser(obj)
 }
