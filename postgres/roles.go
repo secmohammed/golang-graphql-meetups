@@ -15,3 +15,13 @@ func (r *RolesRepo) Create(role *models.Role) (*models.Role, error) {
     _, err := r.DB.Model(role).Returning("*").Insert()
     return role, err
 }
+
+// GetBySlug function is used to get the user by its passed slug.
+func (r *RolesRepo) GetBySlug(slug string) (*models.Role, error) {
+    var role models.Role
+    err := r.DB.Model(&role).Where("slug = ?", slug).First()
+    if err != nil {
+        return nil, err
+    }
+    return &role, nil
+}

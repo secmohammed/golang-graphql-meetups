@@ -89,6 +89,14 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
         return nil, err
 
     }
+    role, err := m.RolesRepo.GetBySlug("user")
+    if err != nil {
+        return nil, err
+    }
+    ok, err := m.UsersRepo.AttachUserToRole(user, role)
+    if err != nil || !ok {
+        return nil, err
+    }
     token, err := user.GenerateToken()
     if err != nil {
         log.Printf("error while Commiting: %v", err)

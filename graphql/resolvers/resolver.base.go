@@ -23,6 +23,7 @@ type Resolver struct {
     AttendeesRepo     postgres.AttendeesRepo
     ConversationsRepo postgres.ConversationsRepo
     GroupsRepo        postgres.GroupsRepo
+    RolesRepo         postgres.RolesRepo
     NotificationsRepo postgres.NotificationsRepo
     messageChannels   map[string]chan *models.Conversation
     nClient           *nats.EncodedConn
@@ -45,6 +46,7 @@ func NewResolver(DB *pg.DB, redisClient *utils.Cache, s *scheduler.Scheduler) *R
         ConversationsRepo: postgres.ConversationsRepo{DB: DB},
         GroupsRepo:        postgres.GroupsRepo{DB: DB},
         NotificationsRepo: postgres.NotificationsRepo{DB: DB},
+        RolesRepo:         postgres.RolesRepo{DB: DB},
         messageChannels:   map[string]chan *models.Conversation{},
         nClient:           nClient,
         redisClient:       redisClient,

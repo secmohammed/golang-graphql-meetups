@@ -60,6 +60,18 @@ func (u *UsersRepo) GetByID(id string) (*models.User, error) {
     }
     return &user, nil
 }
+func (u *UsersRepo) AttachUserToRole(user *models.User, role *models.Role) (bool, error) {
+    userRole := &models.RoleUser{
+        UserID: user.ID,
+        RoleID: role.ID,
+    }
+    _, err := u.DB.Model(&userRole).Insert()
+    if err != nil {
+        return false, err
+    }
+    return true, nil
+
+}
 
 // CreateUser is used to create user for the database.
 func (u *UsersRepo) CreateUser(tx *pg.Tx, user *models.User) (*models.User, error) {
