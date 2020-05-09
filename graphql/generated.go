@@ -113,8 +113,10 @@ type ComplexityRoot struct {
 		Categories  func(childComplexity int) int
 		Comments    func(childComplexity int) int
 		Description func(childComplexity int) int
+		EndDate     func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
+		StartDate   func(childComplexity int) int
 		User        func(childComplexity int) int
 	}
 
@@ -552,6 +554,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Meetup.Description(childComplexity), true
 
+	case "Meetup.end_date":
+		if e.complexity.Meetup.EndDate == nil {
+			break
+		}
+
+		return e.complexity.Meetup.EndDate(childComplexity), true
+
 	case "Meetup.id":
 		if e.complexity.Meetup.ID == nil {
 			break
@@ -565,6 +574,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Meetup.Name(childComplexity), true
+
+	case "Meetup.start_date":
+		if e.complexity.Meetup.StartDate == nil {
+			break
+		}
+
+		return e.complexity.Meetup.StartDate(childComplexity), true
 
 	case "Meetup.user":
 		if e.complexity.Meetup.User == nil {
@@ -1417,6 +1433,9 @@ type Meetup {
   comments: [Comment!]!
   categories: [Category!]!
   attendees: [Attendee!]!
+  start_date: Time!
+  end_date: Time!
+
 }
 type Category {
   id: ID!
@@ -1433,8 +1452,8 @@ type Attendee {
 
 input CreateMeetupInput {
   name: String!
-  start_date: String!
-  end_date: String!
+  start_date: Time!
+  end_date: Time!
   description: String!
   location: String!
   group_id: String
@@ -1467,8 +1486,8 @@ input MeetupFilterInput {
 }
 input UpdateMeetupInput {
   name: String!
-  start_date: String!
-  end_date: String!
+  start_date: Time!
+  end_date: Time!
   description: String!
 }
 input UpdateCommentInput {
@@ -3539,6 +3558,74 @@ func (ec *executionContext) _Meetup_attendees(ctx context.Context, field graphql
 	res := resTmp.([]*models.Attendee)
 	fc.Result = res
 	return ec.marshalNAttendee2ᚕᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAttendeeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Meetup_start_date(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Meetup",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Meetup_end_date(ctx context.Context, field graphql.CollectedField, obj *models.Meetup) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Meetup",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_shareMeetupToGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8149,13 +8236,13 @@ func (ec *executionContext) unmarshalInputCreateMeetupInput(ctx context.Context,
 			}
 		case "start_date":
 			var err error
-			it.StartDate, err = ec.unmarshalNString2string(ctx, v)
+			it.StartDate, err = ec.unmarshalNTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "end_date":
 			var err error
-			it.EndDate, err = ec.unmarshalNString2string(ctx, v)
+			it.EndDate, err = ec.unmarshalNTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8377,13 +8464,13 @@ func (ec *executionContext) unmarshalInputUpdateMeetupInput(ctx context.Context,
 			}
 		case "start_date":
 			var err error
-			it.StartDate, err = ec.unmarshalNString2string(ctx, v)
+			it.StartDate, err = ec.unmarshalNTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "end_date":
 			var err error
-			it.EndDate, err = ec.unmarshalNString2string(ctx, v)
+			it.EndDate, err = ec.unmarshalNTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8892,6 +8979,16 @@ func (ec *executionContext) _Meetup(ctx context.Context, sel ast.SelectionSet, o
 				}
 				return res
 			})
+		case "start_date":
+			out.Values[i] = ec._Meetup_start_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "end_date":
+			out.Values[i] = ec._Meetup_end_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

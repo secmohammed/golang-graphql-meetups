@@ -98,6 +98,9 @@ type Meetup {
   comments: [Comment!]!
   categories: [Category!]!
   attendees: [Attendee!]!
+  start_date: Time!
+  end_date: Time!
+
 }
 type Category {
   id: ID!
@@ -114,8 +117,8 @@ type Attendee {
 
 input CreateMeetupInput {
   name: String!
-  start_date: String!
-  end_date: String!
+  start_date: Time!
+  end_date: Time!
   description: String!
   location: String!
   group_id: String
@@ -148,8 +151,8 @@ input MeetupFilterInput {
 }
 input UpdateMeetupInput {
   name: String!
-  start_date: String!
-  end_date: String!
+  start_date: Time!
+  end_date: Time!
   description: String!
 }
 input UpdateCommentInput {

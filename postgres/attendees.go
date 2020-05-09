@@ -17,9 +17,13 @@ func (a *AttendeesRepo) Create(attendee *models.Attendee) (*models.Attendee, err
 }
 
 // GetByID is used to fetch meetup by id.
-func (a *AttendeesRepo) GetByID(id string) (*models.Attendee, error) {
+func (a *AttendeesRepo) GetByID(id, relation string) (*models.Attendee, error) {
     attendee := models.Attendee{}
-    err := a.DB.Model(&attendee).Where("id = ?", id).First()
+    query := a.DB.Model(&attendee).Where("id = ?", id)
+    if relation != "" {
+        query.Relation(relation)
+    }
+    err := query.First()
     if err != nil {
         return nil, err
     }

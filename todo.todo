@@ -19,6 +19,12 @@
  ✔ Optional: ability to create meetup posts at groups. (encapsulates the meetup creation + associate to group_meetup) @done (20-04-21 04:08)
  ✔ Optional: Chat between users(WIP). @done (20-05-02 11:25)
  ≡ Feature: Implement authorization.
+   ✔ Setup Roles Table @done (20-05-04 06:34)
+   ✔ Setup GraphQL Schema for Roles and relationships @done (20-05-04 06:34)
+   ≡ On Registering a user, attach him to default permissions.
+   ≡ Create mutation for updating user permissions.
+   ≡ Create hasRole Directive for admin roles.
+   ≡ Create mutation for attaching/detaching users from their main permissions
  ✔ Optional: notifications. @done (20-05-03 09:28)
    ✔ When user comments on meetup owner. @done (20-05-03 07:56)
    ✔ When user replies to owner of comment. @done (20-05-03 07:46)

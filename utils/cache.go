@@ -49,10 +49,10 @@ func (c *Cache) SMembers(key string) *redis.StringSliceCmd {
     return c.client.SMembers(key)
 }
 func (c *Cache) Add(ctx context.Context, hash, query string) {
-    c.client.Set(apqPrefix+hash, query, c.ttl)
+    c.client.Set(hash, query, c.ttl)
 }
 func (c *Cache) Get(ctx context.Context, hash string) (string, bool) {
-    s, err := c.client.Get(apqPrefix + hash).Result()
+    s, err := c.client.Get(hash).Result()
     if err != nil {
         return "", false
     }

@@ -45,8 +45,8 @@ func (m *mutationResolver) UpdateMeetup(ctx context.Context, id string, input mo
         ID:          id,
         Name:        input.Name,
         Description: input.Description,
-        StartDate:   input.StartDate,
-        EndDate:     input.EndDate,
+        StartDate:   *input.StartDate,
+        EndDate:     *input.EndDate,
         Location:    input.Location,
     }
     meetup, err = m.MeetupsRepo.Update(meetup)
@@ -63,8 +63,8 @@ func (m *mutationResolver) CreateMeetup(ctx context.Context, input models.Create
     meetup := &models.Meetup{
         Name:        input.Name,
         Description: input.Description,
-        StartDate:   input.StartDate,
-        EndDate:     input.EndDate,
+        StartDate:   *input.StartDate,
+        EndDate:     *input.EndDate,
         Location:    input.Location,
         UserID:      currentUser.ID,
     }

@@ -7,6 +7,7 @@ import (
 
     "github.com/go-pg/pg"
     "github.com/nats-io/nats.go"
+    "github.com/prprprus/scheduler"
     "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/postgres"
@@ -25,9 +26,11 @@ type Resolver struct {
     NotificationsRepo postgres.NotificationsRepo
     messageChannels   map[string]chan *models.Conversation
     nClient           *nats.EncodedConn
+    redisClient       *utils.Cache
+    scheduler         *scheduler.Scheduler
 }
 
-func NewResolver(DB *pg.DB, redisClient *utils.Cache) *Resolver {
+func NewResolver(DB *pg.DB, redisClient *utils.Cache, s *scheduler.Scheduler) *Resolver {
     nc, err := nats.Connect(nats.DefaultURL)
     nClient, _ := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
     if err != nil {
@@ -44,6 +47,8 @@ func NewResolver(DB *pg.DB, redisClient *utils.Cache) *Resolver {
         NotificationsRepo: postgres.NotificationsRepo{DB: DB},
         messageChannels:   map[string]chan *models.Conversation{},
         nClient:           nClient,
+        redisClient:       redisClient,
+        scheduler:         s,
     }
 }
 

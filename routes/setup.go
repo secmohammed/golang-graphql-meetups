@@ -15,6 +15,7 @@ import (
     "github.com/go-chi/chi/middleware"
     "github.com/go-pg/pg"
     "github.com/gorilla/websocket"
+    "github.com/prprprus/scheduler"
     "github.com/rs/cors"
     "github.com/secmohammed/meetups/graphql"
     "github.com/secmohammed/meetups/graphql/loaders"
@@ -42,7 +43,11 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
     if err != nil {
         log.Fatalf("Cannot create APQ redis cache: %v", err)
     }
-    resolver := resolvers.NewResolver(DB, cache)
+    s, err := scheduler.NewScheduler(1000)
+    if err != nil {
+        log.Fatalf("Cannot create scheduler: %v", err)
+    }
+    resolver := resolvers.NewResolver(DB, cache, s)
     c := graphql.Config{Resolvers: resolver}
     c.Directives.Authentication = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, auth models.Authentication) (res interface{}, err error) {
         _, err = middlewares.GetCurrentUserFromContext(ctx)

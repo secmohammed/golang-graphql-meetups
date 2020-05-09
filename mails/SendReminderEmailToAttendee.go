@@ -17,7 +17,7 @@ func SendReminderEmailToAttendee(user *models.User, meetup *models.Meetup) {
     msg := "From: " + from + "\n" +
         "To: " + user.Email + "\n" +
         "Subject: Reminder: For your " + meetup.Name + "\n\n" +
-        "Hello, " + user.FirstName + " \n\n Don't forget that the meetup will be held at " + meetup.StartDate + " at " + meetup.Location
+        "Hello, " + user.FirstName + " \n\n Don't forget that the meetup will be held at " + meetup.StartDate.Format("Mon Jan _2 15:04:05 2006") + " at " + meetup.Location
     err := smtp.SendMail(host+":"+port,
         smtp.PlainAuth("", from, password, host),
         from, []string{user.Email}, []byte(msg))

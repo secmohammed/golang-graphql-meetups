@@ -12,8 +12,8 @@ type Meetup struct {
     Name        string      `json:"name" validate:"required,min=3,max=100"`
     Description string      `json:"description" `
     UserID      string      `json:"user_id"`
-    StartDate   string      `json:"start_date"`
-    EndDate     string      `json:"end_date"`
+    StartDate   time.Time   `json:"start_date"`
+    EndDate     time.Time   `json:"end_date"`
     Location    string      `json:"location"`
     Categories  []*Category `pg:"many2many:category_meetup,joinFK:category_id"`
     Attendees   []*Attendee
@@ -24,21 +24,21 @@ type Meetup struct {
 
 //CreateMeetupInput is used to validate the attributes with the following criteria.
 type CreateMeetupInput struct {
-    Name        string `json:"name" validate:"required,min=3,max=100"`
-    Description string `json:"description" validate:"required,min=3,max=500"`
-    StartDate   string `json:"start_date" validate:"required"`
-    EndDate     string `json:"end_date" validate:"required"`
-    Location    string `json:"location" validate:"required,min=3,max=100"`
-    GroupID     string `json:"group_id" validate:"omitempty"`
+    Name        string     `json:"name" validate:"required,min=3,max=100"`
+    Description string     `json:"description" validate:"required,min=3,max=500"`
+    StartDate   *time.Time `json:"start_date" validate:"required"`
+    EndDate     *time.Time `json:"end_date" validate:"required"`
+    Location    string     `json:"location" validate:"required,min=3,max=100"`
+    GroupID     string     `json:"group_id" validate:"omitempty"`
 }
 
 //UpdateMeetupInput is used to validate the attributes with the following criteria.
 type UpdateMeetupInput struct {
-    Name        string `json:"name" validate:"required,min=3,max=100"`
-    Description string `json:"description" validate:"required,min=3,max=500"`
-    StartDate   string `json:"start_date" validate:"required"`
-    EndDate     string `json:"end_date" validate:"requireed"`
-    Location    string `json:"location" validate:"required,min=3,max=100"`
+    Name        string     `json:"name" validate:"required,min=3,max=100"`
+    Description string     `json:"description" validate:"required,min=3,max=500"`
+    StartDate   *time.Time `json:"start_date" validate:"required"`
+    EndDate     *time.Time `json:"end_date" validate:"requireed"`
+    Location    string     `json:"location" validate:"required,min=3,max=100"`
 }
 
 //MeetupFilterInput is used to specify the attributes needed to filter meetups by.
