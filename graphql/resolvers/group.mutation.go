@@ -180,7 +180,17 @@ func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, u
     return m.GroupsRepo.AssignMemberToGroup(group, userID, *role)
 }
 
-//TODO:
 func (m *mutationResolver) DischargeMemberFromGroup(ctx context.Context, id string, userID string) (*models.Group, error) {
-    return nil, nil
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    group, err := m.GroupsRepo.GetByID(id)
+    if err != nil {
+        return nil, errors.ErrRecordNotFound
+    }
+    // if he isn't an creator of the group
+    // or the currently authenticated user is not a secondary admin nor a moderator.
+    exists, err := m.GroupsRepo.IsUserSecondaryAdminOfGroup(id, currentUser.ID)
+    if err != nil || (!exists && group.UserID != currentUser.ID) {
+        return nil, errors.ErrUnauthenticated
+    }
+    return m.GroupsRepo.DischargeMemberFromGroup(group, userID)
 }

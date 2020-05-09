@@ -28,6 +28,18 @@ func (g *GroupsRepo) AttachMeetupToGroup(group *models.Group, meetup *models.Mee
     _, err := g.DB.Model(&meetupGroup).Insert()
     return err
 }
+func (g *GroupsRepo) DischargeMemberFromGroup(group *models.Group, userID string) (*models.Group, error) {
+    groupUser := models.GroupUser{
+        GroupID: group.ID,
+        UserID:  userID,
+    }
+    _, err := g.DB.Model(&groupUser).Where("group_id = ?", group.ID).Where("user_id = ? ", userID).Delete()
+    if err != nil {
+        return nil, err
+    }
+    return group, nil
+
+}
 func (g *GroupsRepo) AssignMemberToGroup(group *models.Group, userID, role string) (*models.Group, error) {
     //TODO: FirstOrCreate.
     groupUser := models.GroupUser{
