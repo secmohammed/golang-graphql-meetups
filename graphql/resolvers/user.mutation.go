@@ -3,6 +3,7 @@ package resolvers
 import (
     "context"
     coreErrors "errors"
+    "fmt"
     "log"
     "os"
 
@@ -93,6 +94,7 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
     if err != nil {
         return nil, err
     }
+    fmt.Println(role)
     ok, err := m.UsersRepo.AttachUserToRole(user, role)
     if err != nil || !ok {
         return nil, err

@@ -67,7 +67,7 @@ func (u *UsersRepo) AttachUserToRole(user *models.User, role *models.Role) (bool
         UserID: user.ID,
         RoleID: role.ID,
     }
-    _, err := u.DB.Model(&userRole).Insert()
+    _, err := u.DB.Model(userRole).Insert()
     if err != nil {
         return false, err
     }
