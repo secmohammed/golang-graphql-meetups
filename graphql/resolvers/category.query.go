@@ -16,7 +16,6 @@ func (r *Resolver) Category() graphql.CategoryResolver {
 }
 
 func (c *categoryResolver) Meetups(ctx context.Context, obj *models.Category) ([]*models.Meetup, error) {
-    // return obj.Meetups, nil
     return loaders.GetLoaders(ctx).MeetupsByCategory.Load(obj.ID)
 }
 func (c *categoryResolver) User(ctx context.Context, obj *models.Category) (*models.User, error) {

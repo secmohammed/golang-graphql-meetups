@@ -26,7 +26,7 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
         MeetupID: input.MeetupID,
     }
     if input.ParentID != "" {
-        //TODO: if comment has a parent_id, fetch the user_id that's attached to this record and notify this user.
+        //if comment has a parent_id, fetch the user_id that's attached to this record and notify this user.
         foundComment, err := c.CommentsRepo.GetByID(input.ParentID)
         if err != nil {
             return nil, errors.ErrRecordNotFound

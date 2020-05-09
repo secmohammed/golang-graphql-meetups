@@ -33,7 +33,6 @@ func (m *meetupResolver) Attendees(ctx context.Context, obj *models.Meetup) ([]*
     return loaders.GetLoaders(ctx).AttendeesByMeetup.Load(obj.ID)
 }
 func (m *meetupResolver) Comments(ctx context.Context, obj *models.Meetup) ([]*models.Comment, error) {
-    // loaders.GetLoaders(ctx).CommentsByMeetupID.Load(obj.ID)
     return m.CommentsRepo.GetCommentsForMeetup(obj.ID)
 }
 func (m *meetupResolver) Categories(ctx context.Context, obj *models.Meetup) ([]*models.Category, error) {

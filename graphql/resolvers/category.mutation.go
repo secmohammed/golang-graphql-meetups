@@ -46,7 +46,10 @@ func (c *mutationResolver) CreateCategory(ctx context.Context, input models.Crea
     if err := input.Validate(); err != nil {
         return nil, err
     }
-    // TODO: check if user is admin, or has the ability to create a category.
+    ok, err := c.UsersRepo.Can(currentUser.ID, "update-category")
+    if err != nil || !ok {
+        return nil, errors.ErrUnauthenticated
+    }
     category := &models.Category{
         Name:   input.Name,
         UserID: currentUser.ID,
@@ -63,8 +66,8 @@ func (c *mutationResolver) UpdateCategory(ctx context.Context, name string, inpu
     if err != nil {
         return nil, errors.ErrRecordNotFound
     }
-    // TODO: check if user is admin, or has the ability to update a category.
-    if category.UserID != currentUser.ID {
+    ok, err := c.UsersRepo.Can(currentUser.ID, "update-category")
+    if err != nil || (category.UserID != currentUser.ID && !ok) {
         return nil, errors.ErrUnauthenticated
     }
     if err := input.Validate(); err != nil {
@@ -80,11 +83,11 @@ func (c *mutationResolver) DeleteCategory(ctx context.Context, name string) (boo
     }
 
     category, err := c.CategoriesRepo.GetByName(name)
-    // TODO: check if user is admin, or has the ability to delete a category.
     if err != nil {
         return false, errors.ErrRecordNotFound
     }
-    if category.UserID != currentUser.ID {
+    ok, err := c.UsersRepo.Can(currentUser.ID, "delete-category")
+    if err != nil || (category.UserID != currentUser.ID && !ok) {
         return false, errors.ErrUnauthenticated
     }
 
