@@ -51,6 +51,11 @@ func (c *ConversationsRepo) Update(conversation *models.Conversation) (*models.C
     _, err := c.DB.Model(conversation).Where("id = ?", conversation.ID).Update()
     return conversation, err
 }
+func (c *ConversationsRepo) GetConversationsForUser(id string) ([]*models.Conversation, error) {
+    var conversations []*models.Conversation
+    err := c.DB.Model(&conversations).Where("parent_id = ?", nil).Where("user_id = ?", id).Order("id").Select()
+    return conversations, err
+}
 
 // GetByID is used to fetch conversation by id.
 func (c *ConversationsRepo) GetByID(id string) (*models.Conversation, error) {
