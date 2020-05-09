@@ -217,6 +217,8 @@ type Mutation {
   updateGroup(id: ID!, input: UpdateGroupInput!): Group! @authentication(auth: AUTHENTICATED)
   # we need to make sure that user who does that is actually an admin.
   assignMemberToGroup(id: ID!, userID: ID!, role: String = "member"): Group! @authentication(auth: AUTHENTICATED)
+  dischargeMemberFromGroup(id: ID!, userID: ID!): Group! @authentication(auth: AUTHENTICATED)
+  leaveGroup(id: ID!): Group! @authentication(auth: AUTHENTICATED)
   createAttendance(input: CreateAttendanceInput!): Attendee!
     @authentication(auth: AUTHENTICATED)
   updateAttendance(id: ID!, status: AttendanceStatus!): Attendee!

@@ -180,6 +180,20 @@ func (m *mutationResolver) AssignMemberToGroup(ctx context.Context, id string, u
     return m.GroupsRepo.AssignMemberToGroup(group, userID, *role)
 }
 
+func (m *mutationResolver) LeaveGroup(ctx context.Context, id string) (*models.Group, error) {
+    currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
+    group, err := m.GroupsRepo.GetByID(id)
+    if err != nil {
+        return nil, errors.ErrRecordNotFound
+    }
+
+    exists, err := m.GroupsRepo.IsUserMemberOfGroup(id, currentUser.ID)
+    if err != nil || !exists {
+        return nil, errors.ErrRecordNotFound
+    }
+    return m.GroupsRepo.DischargeMemberFromGroup(group, currentUser.ID)
+
+}
 func (m *mutationResolver) DischargeMemberFromGroup(ctx context.Context, id string, userID string) (*models.Group, error) {
     currentUser, _ := middlewares.GetCurrentUserFromContext(ctx)
     group, err := m.GroupsRepo.GetByID(id)
