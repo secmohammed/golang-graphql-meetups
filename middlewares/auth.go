@@ -76,6 +76,14 @@ func parseToken(r *http.Request) (*jwt.Token, error) {
 
     return jwtToken, errors.Wrap(err, "parseToken error: ")
 }
+func HasRole(ctx context.Context, role string, userRepo postgres.UsersRepo) (bool, error) {
+    user, err := GetCurrentUserFromContext(ctx)
+    if err != nil {
+        return false, err
+    }
+    return userRepo.Can(user.ID, role)
+
+}
 
 //GetCurrentUserFromContext is used to parse the user that we have at our context.
 func GetCurrentUserFromContext(ctx context.Context) (*models.User, error) {

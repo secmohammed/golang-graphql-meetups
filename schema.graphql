@@ -6,10 +6,12 @@ enum AttendanceStatus {
   interested
 }
 directive @authentication(auth: Authentication!) on FIELD_DEFINITION
+directive @can(role: String!) on FIELD_DEFINITION
 enum Authentication {
   GUEST
   AUTHENTICATED
 }
+
 type Role {
   id: ID!
   slug: String!
@@ -236,11 +238,9 @@ type Mutation {
     @authentication(auth: AUTHENTICATED)
   deleteComment(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
-  createCategory(input: CreateCategoryInput!): Category!
-    @authentication(auth: AUTHENTICATED)
-  updateCategory(name: String!, input: CreateCategoryInput): Category!
-    @authentication(auth: AUTHENTICATED)
-  deleteCategory(name: String!): Boolean! @authentication(auth: AUTHENTICATED)
+  createCategory(input: CreateCategoryInput!): Category! @can(role: "create-category")
+  updateCategory(name: String!, input: CreateCategoryInput): Category! @can(role: "update-category")
+  deleteCategory(name: String!): Boolean! @can(role: "delete-category")
 
   register(input: RegisterInput): Auth! @authentication(auth: GUEST)
   login(input: LoginInput): Auth! @authentication(auth: GUEST)

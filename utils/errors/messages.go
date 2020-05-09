@@ -13,7 +13,8 @@ var (
     ErrRecordNotFound = errors.New("record doesn't exist")
     //ErrInternalError is used to indicate that there is something went wrong with the server.
     ErrInternalError = errors.New("Whoops, something went wrong")
-
+    //ErrInsufficientPermissions is used to indicate that user doesn't have a certain permission.
+    ErrInsufficientPermissions = errors.New("You don't have this permission to proceed")
     //ErrEmailIsntUnique is used to indicate that email isn't unique at database.
     ErrEmailIsntUnique = errors.New("email is already used")
     //ErrUsernameIsntUnique  is used to indicate that email isn't unique at database.

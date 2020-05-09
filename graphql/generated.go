@@ -54,6 +54,7 @@ type ResolverRoot interface {
 
 type DirectiveRoot struct {
 	Authentication func(ctx context.Context, obj interface{}, next graphql.Resolver, auth models.Authentication) (res interface{}, err error)
+	Can            func(ctx context.Context, obj interface{}, next graphql.Resolver, role string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -1369,10 +1370,12 @@ enum AttendanceStatus {
   interested
 }
 directive @authentication(auth: Authentication!) on FIELD_DEFINITION
+directive @can(role: String!) on FIELD_DEFINITION
 enum Authentication {
   GUEST
   AUTHENTICATED
 }
+
 type Role {
   id: ID!
   slug: String!
@@ -1599,11 +1602,9 @@ type Mutation {
     @authentication(auth: AUTHENTICATED)
   deleteComment(id: ID!): Boolean! @authentication(auth: AUTHENTICATED)
 
-  createCategory(input: CreateCategoryInput!): Category!
-    @authentication(auth: AUTHENTICATED)
-  updateCategory(name: String!, input: CreateCategoryInput): Category!
-    @authentication(auth: AUTHENTICATED)
-  deleteCategory(name: String!): Boolean! @authentication(auth: AUTHENTICATED)
+  createCategory(input: CreateCategoryInput!): Category! @can(role: "create-category")
+  updateCategory(name: String!, input: CreateCategoryInput): Category! @can(role: "update-category")
+  deleteCategory(name: String!): Boolean! @can(role: "delete-category")
 
   register(input: RegisterInput): Auth! @authentication(auth: GUEST)
   login(input: LoginInput): Auth! @authentication(auth: GUEST)
@@ -1647,6 +1648,20 @@ func (ec *executionContext) dir_authentication_args(ctx context.Context, rawArgs
 		}
 	}
 	args["auth"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) dir_can_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["role"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["role"] = arg0
 	return args, nil
 }
 
@@ -4827,14 +4842,14 @@ func (ec *executionContext) _Mutation_createCategory(ctx context.Context, field 
 			return ec.resolvers.Mutation().CreateCategory(rctx, args["input"].(models.CreateCategoryInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			role, err := ec.unmarshalNString2string(ctx, "create-category")
 			if err != nil {
 				return nil, err
 			}
-			if ec.directives.Authentication == nil {
-				return nil, errors.New("directive authentication is not implemented")
+			if ec.directives.Can == nil {
+				return nil, errors.New("directive can is not implemented")
 			}
-			return ec.directives.Authentication(ctx, nil, directive0, auth)
+			return ec.directives.Can(ctx, nil, directive0, role)
 		}
 
 		tmp, err := directive1(rctx)
@@ -4892,14 +4907,14 @@ func (ec *executionContext) _Mutation_updateCategory(ctx context.Context, field 
 			return ec.resolvers.Mutation().UpdateCategory(rctx, args["name"].(string), args["input"].(*models.CreateCategoryInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			role, err := ec.unmarshalNString2string(ctx, "update-category")
 			if err != nil {
 				return nil, err
 			}
-			if ec.directives.Authentication == nil {
-				return nil, errors.New("directive authentication is not implemented")
+			if ec.directives.Can == nil {
+				return nil, errors.New("directive can is not implemented")
 			}
-			return ec.directives.Authentication(ctx, nil, directive0, auth)
+			return ec.directives.Can(ctx, nil, directive0, role)
 		}
 
 		tmp, err := directive1(rctx)
@@ -4957,14 +4972,14 @@ func (ec *executionContext) _Mutation_deleteCategory(ctx context.Context, field 
 			return ec.resolvers.Mutation().DeleteCategory(rctx, args["name"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			auth, err := ec.unmarshalNAuthentication2githubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuthentication(ctx, "AUTHENTICATED")
+			role, err := ec.unmarshalNString2string(ctx, "delete-category")
 			if err != nil {
 				return nil, err
 			}
-			if ec.directives.Authentication == nil {
-				return nil, errors.New("directive authentication is not implemented")
+			if ec.directives.Can == nil {
+				return nil, errors.New("directive can is not implemented")
 			}
-			return ec.directives.Authentication(ctx, nil, directive0, auth)
+			return ec.directives.Can(ctx, nil, directive0, role)
 		}
 
 		tmp, err := directive1(rctx)

@@ -57,6 +57,16 @@ func SetupRoutes(DB *pg.DB) *chi.Mux {
         if err == nil && auth == "GUEST" {
             return nil, errors.ErrAuthenticated
         }
+        fmt.Println("second")
+        // or let it pass through
+        return next(ctx)
+    }
+    c.Directives.Can = func(ctx context.Context, obj interface{}, next packageGraphQL.Resolver, role string) (res interface{}, err error) {
+        _, err = middlewares.GetCurrentUserFromContext(ctx)
+        ok, err := middlewares.HasRole(ctx, role, userRepo)
+        if err != nil || !ok {
+            return nil, errors.ErrInsufficientPermissions
+        }
 
         // or let it pass through
         return next(ctx)

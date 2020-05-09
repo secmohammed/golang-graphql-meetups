@@ -4,6 +4,7 @@ import (
     "fmt"
 
     "github.com/go-pg/pg"
+    "github.com/go-pg/pg/orm"
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/utils/errors"
 )
@@ -20,22 +21,23 @@ func (u *UsersRepo) GetByField(field, value string) (*models.User, error) {
     return &user, err
 }
 func (u *UsersRepo) Can(id, role string) (bool, error) {
-    // fetch the user by id
-    // load the roles for this user
-    var user models.User
-    err := u.DB.Model(&user).Where("id = ?", id).Relation("Roles").First()
+    var roles []*models.Role
+    err := u.DB.Model(&roles).Relation("Users", func(q *orm.Query) (*orm.Query, error) {
+        return q.Where("role_user.user_id = ?", id), nil
+    }).Select()
+
     if err != nil {
-        return false, errors.ErrRecordNotFound
+        return false, err
     }
-    // merge his permissions with the roles permissions
-    var permissions map[string]bool
-    for _, role := range user.Roles {
+    permissions := make(map[string]bool)
+    for _, role := range roles {
         for key, value := range role.Permissions {
+            fmt.Println(key, value)
             permissions[key] = value
         }
-    }
-    for key, value := range user.Permissions {
-        permissions[key] = value
+        for key, value := range role.Users[0].Permissions {
+            permissions[key] = value
+        }
     }
     // check if the map contains the passed role
     if permissions[role] {
