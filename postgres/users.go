@@ -62,10 +62,21 @@ func (u *UsersRepo) GetByID(id string) (*models.User, error) {
     }
     return &user, nil
 }
-func (u *UsersRepo) AttachUserToRole(user *models.User, role *models.Role) (bool, error) {
+func (u *UsersRepo) DetachUserFromRole(userID, roleID string) (bool, error) {
     userRole := &models.RoleUser{
-        UserID: user.ID,
-        RoleID: role.ID,
+        UserID: userID,
+        RoleID: roleID,
+    }
+    _, err := u.DB.Model(userRole).Delete()
+    if err != nil {
+        return false, err
+    }
+    return true, nil
+}
+func (u *UsersRepo) AttachUserToRole(userID, roleID string) (bool, error) {
+    userRole := &models.RoleUser{
+        UserID: userID,
+        RoleID: roleID,
     }
     _, err := u.DB.Model(userRole).Insert()
     if err != nil {

@@ -3,7 +3,6 @@ package resolvers
 import (
     "context"
     coreErrors "errors"
-    "fmt"
     "log"
     "os"
 
@@ -94,8 +93,7 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
     if err != nil {
         return nil, err
     }
-    fmt.Println(role)
-    ok, err := m.UsersRepo.AttachUserToRole(user, role)
+    ok, err := m.UsersRepo.AttachUserToRole(user.ID, role.ID)
     if err != nil || !ok {
         return nil, err
     }
@@ -108,4 +106,10 @@ func (m *mutationResolver) Register(ctx context.Context, input *models.RegisterI
         AuthToken: token,
         User:      user,
     }, nil
+}
+func (m *mutationResolver) AttachUserToRole(ctx context.Context, userID string, roleID string) (bool, error) {
+    return m.UsersRepo.AttachUserToRole(userID, roleID)
+}
+func (m *mutationResolver) DetachUserFromRole(ctx context.Context, userID string, roleID string) (bool, error) {
+    return m.UsersRepo.DetachUserFromRole(userID, roleID)
 }

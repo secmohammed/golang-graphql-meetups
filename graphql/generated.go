@@ -139,6 +139,7 @@ type ComplexityRoot struct {
 		DeleteInterest           func(childComplexity int, categoryID string) int
 		DeleteMeetup             func(childComplexity int, id string) int
 		DeleteMeetupFromGroup    func(childComplexity int, meetupID string, groupID string) int
+		DetachUserFromRole       func(childComplexity int, userID string, roleID string) int
 		DischargeMemberFromGroup func(childComplexity int, id string, userID string) int
 		LeaveGroup               func(childComplexity int, id string) int
 		Login                    func(childComplexity int, input *models.LoginInput) int
@@ -264,6 +265,7 @@ type MutationResolver interface {
 	DeleteCategory(ctx context.Context, name string) (bool, error)
 	Register(ctx context.Context, input *models.RegisterInput) (*models.Auth, error)
 	Login(ctx context.Context, input *models.LoginInput) (*models.Auth, error)
+	DetachUserFromRole(ctx context.Context, userID string, roleID string) (bool, error)
 	CreateMeetup(ctx context.Context, input models.CreateMeetupInput) (*models.Meetup, error)
 	UpdateMeetup(ctx context.Context, id string, input models.UpdateMeetupInput) (*models.Meetup, error)
 	DeleteMeetup(ctx context.Context, id string) (bool, error)
@@ -797,6 +799,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteMeetupFromGroup(childComplexity, args["meetup_id"].(string), args["group_id"].(string)), true
+
+	case "Mutation.detachUserFromRole":
+		if e.complexity.Mutation.DetachUserFromRole == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_detachUserFromRole_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DetachUserFromRole(childComplexity, args["user_id"].(string), args["role_id"].(string)), true
 
 	case "Mutation.dischargeMemberFromGroup":
 		if e.complexity.Mutation.DischargeMemberFromGroup == nil {
@@ -1608,7 +1622,7 @@ type Mutation {
 
   register(input: RegisterInput): Auth! @authentication(auth: GUEST)
   login(input: LoginInput): Auth! @authentication(auth: GUEST)
-
+  detachUserFromRole(user_id: ID!, role_id: ID!): Boolean! @can(role: "change-user-role")
   createMeetup(input: CreateMeetupInput!): Meetup!
     @authentication(auth: AUTHENTICATED)
   updateMeetup(id: ID!, input: UpdateMeetupInput!): Meetup!
@@ -1940,6 +1954,28 @@ func (ec *executionContext) field_Mutation_deleteMeetup_args(ctx context.Context
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_detachUserFromRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["role_id"]; ok {
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["role_id"] = arg1
 	return args, nil
 }
 
@@ -5137,6 +5173,71 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	res := resTmp.(*models.Auth)
 	fc.Result = res
 	return ec.marshalNAuth2ᚖgithubᚗcomᚋsecmohammedᚋmeetupsᚋmodelsᚐAuth(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_detachUserFromRole(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_detachUserFromRole_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DetachUserFromRole(rctx, args["user_id"].(string), args["role_id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNString2string(ctx, "change-user-role")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Can == nil {
+				return nil, errors.New("directive can is not implemented")
+			}
+			return ec.directives.Can(ctx, nil, directive0, role)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createMeetup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9333,6 +9434,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "detachUserFromRole":
+			out.Values[i] = ec._Mutation_detachUserFromRole(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
