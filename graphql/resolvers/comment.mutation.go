@@ -3,6 +3,7 @@ package resolvers
 import (
     "context"
 
+	"github.com/appleboy/go-fcm"
     "github.com/secmohammed/meetups/middlewares"
     "github.com/secmohammed/meetups/models"
     "github.com/secmohammed/meetups/utils/errors"
@@ -43,6 +44,23 @@ func (c *mutationResolver) CreateComment(ctx context.Context, input models.Creat
         }
         c.nClient.Publish("notification.user_"+foundComment.UserID, notification)
         comment.ParentID = input.ParentID
+          msg := &fcm.Message{
+		To: foundComment.User.DeviceToken,
+		Data: map[string]interface{}{
+			"comment": comment,
+            "message": fmt.Sprintf("%s replied  you with: %s", foundComment.User.Username, comment.Body)
+		},
+	}
+    client, err := fcm.NewClient(os.Getenv("fcm_token"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Send the message and receive the response without retries.
+	response, err := client.Send(msg)
+	if err != nil {
+		log.Fatalln(err)
+	}
     }
     if input.GroupID != "" {
         _, err := c.GroupsRepo.GetByID(input.GroupID)

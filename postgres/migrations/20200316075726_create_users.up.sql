@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS  users(
     username VARCHAR(55) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     first_name VARCHAR(255) NOT NULL,
+    device_token VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     permissions text[] DEFAULT NULL,
     password TEXT NOT NULL,
