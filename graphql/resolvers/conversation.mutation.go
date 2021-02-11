@@ -1,14 +1,15 @@
 package resolvers
 
 import (
-	"context"
-	"fmt"
-	"os"
-	"time"
+    "context"
+    "fmt"
+    "log"
+    "os"
+    "time"
 
-	"github.com/appleboy/go-fcm"
-	"github.com/secmohammed/meetups/middlewares"
-	"github.com/secmohammed/meetups/models"
+    "github.com/appleboy/go-fcm"
+    "github.com/secmohammed/meetups/middlewares"
+    "github.com/secmohammed/meetups/models"
 )
 
 func (c *mutationResolver) CreateConversation(ctx context.Context, input models.CreateConversationInput) (*models.Conversation, error) {
@@ -55,21 +56,21 @@ func (c *mutationResolver) CreateMessage(ctx context.Context, conversationID str
     }
     c.nClient.Publish("conversation."+conversationID, conversation)
     msg := &fcm.Message{
-		To: currentUser.DeviceToken,
-		Data: map[string]interface{}{
-			"conversation": conversation,
-            "message": fmt.Sprintf("%s messaged you with: %s", currentUser.Username, conversation.Message)
-		},
-	}
+        To: currentUser.DeviceToken,
+        Data: map[string]interface{}{
+            "conversation": conversation,
+            "message":      fmt.Sprintf("%s messaged you with: %s", currentUser.Username, conversation.Message),
+        },
+    }
     client, err := fcm.NewClient(os.Getenv("fcm_token"))
-	if err != nil {
-		log.Fatalln(err)
-	}
+    if err != nil {
+        log.Fatalln(err)
+    }
 
-	// Send the message and receive the response without retries.
-	response, err := client.Send(msg)
-	if err != nil {
-		log.Fatalln(err)
-	}
+    // Send the message and receive the response without retries.
+    _, err = client.Send(msg)
+    if err != nil {
+        log.Fatalln(err)
+    }
     return conversation, nil
 }

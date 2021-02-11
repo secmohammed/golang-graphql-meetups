@@ -8,9 +8,10 @@ import (
 
 //Comment model.
 type Comment struct {
-    ID        string     `json:"id"`
-    Body      string     `json:"body"`
-    UserID    string     `json:"user_id"`
+    ID        string `json:"id"`
+    Body      string `json:"body"`
+    UserID    string `json:"user_id"`
+    User      *User
     MeetupID  string     `json:"meetup_id"`
     ParentID  string     `json:"parent_id" pg:"default:null"`
     GroupID   string     `json:"group_id" pg:"default:null"`
